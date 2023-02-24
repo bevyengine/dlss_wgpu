@@ -7,8 +7,7 @@ edition = "2021"
 wgpu = "0.15"
 wgpu-core = "0.15"
 ash = "0.37"
-directories = "4.0"
 thiserror = "1.0"
 
 [build-dependencies]
-bindgen = "0.64"
+bindgen = { version = "0.64", features = ["experimental"] }
