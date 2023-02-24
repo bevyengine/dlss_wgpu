@@ -20,6 +20,29 @@ type VkPhysicalDevice = ash::vk::PhysicalDevice;
 
 use std::ffi::OsStr;
 
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub enum DLSSPreset {
+    #[default]
+    Auto,
+    Native,
+    UltraQuality,
+    Quality,
+    Balanced,
+    Performance,
+    UltraPerformance,
+}
+
+bitflags::bitflags! {
+    pub struct DLSSFeatureFlags: NVSDK_NGX_DLSS_Feature_Flags {
+        const HighDynamicRange = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
+        const LowResolutionMotionVectors = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+        const JitteredMotionVectors = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
+        const InvertedDepth = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+        const AutoExposure = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+        const PartialTextureInputs = 1 << 7;
+    }
+}
+
 #[derive(thiserror::Error, Debug)]
 pub enum DLSSError {
     #[error("TODO")]
