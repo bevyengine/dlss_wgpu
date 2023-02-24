@@ -119,8 +119,7 @@ impl<D: Deref<Target = Device> + Clone> DLSSContext<D> {
         sdk: &mut DLSSSDK<D>,
         command_encoder: &mut CommandEncoder,
     ) -> Result<Self, DLSSError> {
-        let in_enable_output_subrects =
-            feature_flags.contains(DLSSFeatureFlags::PartialTextureInputs);
+        let enable_output_subrects = feature_flags.contains(DLSSFeatureFlags::PartialTextureInputs);
         feature_flags.remove(DLSSFeatureFlags::PartialTextureInputs);
 
         let perf_quality_value = match preset {
@@ -191,7 +190,7 @@ impl<D: Deref<Target = Device> + Clone> DLSSContext<D> {
                 InPerfQualityValue: perf_quality_value,
             },
             InFeatureCreateFlags: feature_flags.bits(),
-            InEnableOutputSubrects: in_enable_output_subrects,
+            InEnableOutputSubrects: enable_output_subrects,
         };
 
         unsafe {
