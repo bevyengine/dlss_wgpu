@@ -79,7 +79,7 @@ impl<D: Deref<Target = Device> + Clone> DLSSSDK<D> {
 
             // TODO: Obtain optimal settings for each display resolution and DLSS Execution Mode
 
-            Ok(Self { device, parameters })
+            Ok(Self { parameters, device })
         }
     }
 }
