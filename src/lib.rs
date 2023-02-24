@@ -11,12 +11,12 @@ use std::ptr;
 use wgpu::{CommandEncoder, Device};
 use wgpu_core::api::Vulkan;
 
-pub struct DLSSSDK<D: Deref<Target = Device>> {
+pub struct DLSSSDK<D: Deref<Target = Device> + Clone> {
     device: D,
     parameters: *mut NVSDK_NGX_Parameter,
 }
 
-impl<D: Deref<Target = Device>> DLSSSDK<D> {
+impl<D: Deref<Target = Device> + Clone> DLSSSDK<D> {
     pub fn new(application_id: Option<u64>, device: D) -> Result<Self, DLSSError> {
         let sdk_info = NVSDK_NGX_FeatureCommonInfo {
             // TODO: Allow passing list of extra DLSS shared library paths
@@ -84,7 +84,7 @@ impl<D: Deref<Target = Device>> DLSSSDK<D> {
     }
 }
 
-impl<D: Deref<Target = Device>> Drop for DLSSSDK<D> {
+impl<D: Deref<Target = Device> + Clone> Drop for DLSSSDK<D> {
     fn drop(&mut self) {
         unsafe {
             self.device.as_hal::<Vulkan, _, _>(|device| {
@@ -103,30 +103,49 @@ impl<D: Deref<Target = Device>> Drop for DLSSSDK<D> {
     }
 }
 
-pub struct DLSSContext {}
+pub struct DLSSContext<D: Deref<Target = Device> + Clone> {
+    feature: *mut NVSDK_NGX_Handle,
+    device: D,
+}
 
-impl DLSSContext {
-    pub fn new<D: Deref<Target = Device>>(
+impl<D: Deref<Target = Device> + Clone> DLSSContext<D> {
+    pub fn new(
         dlss_sdk: &DLSSSDK<D>,
         command_encoder: &mut CommandEncoder,
     ) -> Result<Self, DLSSError> {
         unsafe {
+            let mut feature = MaybeUninit::<*mut NVSDK_NGX_Handle>::uninit();
             check_ngx_result(NGX_VULKAN_CREATE_DLSS_EXT(
-                todo!(),
+                todo!("Command buffer"),
                 1,
                 1,
-                todo!(),
-                todo!(),
-                todo!(),
+                feature.as_mut_ptr(),
+                dlss_sdk.parameters,
+                todo!("DLSS context parameters"),
             ))?;
-        }
+            let feature = feature.assume_init();
 
-        Ok(Self {})
+            Ok(Self {
+                feature,
+                device: dlss_sdk.device.clone(),
+            })
+        }
     }
 }
 
-impl Drop for DLSSContext {
+impl<D: Deref<Target = Device> + Clone> Drop for DLSSContext<D> {
     fn drop(&mut self) {
-        todo!()
+        unsafe {
+            self.device.as_hal::<Vulkan, _, _>(|device| {
+                device
+                    .unwrap()
+                    .raw_device()
+                    .device_wait_idle()
+                    .expect("Failed to wait for idle device when destroying DLSSContext");
+
+                check_ngx_result(NVSDK_NGX_VULKAN_ReleaseFeature(self.feature))
+                    .expect("Failed to destroy DLSSContext feature");
+            });
+        }
     }
 }
