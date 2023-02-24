@@ -4,18 +4,21 @@ pub use dlss::DLSSError;
 
 use dlss::*;
 use std::env;
+use std::mem::MaybeUninit;
 use std::ops::Deref;
+use std::os::raw::c_int;
 use std::ptr;
 use wgpu::{CommandEncoder, Device};
 use wgpu_core::api::Vulkan;
 
 pub struct DLSSSDK<D: Deref<Target = Device>> {
     device: D,
+    parameters: *mut NVSDK_NGX_Parameter,
 }
 
 impl<D: Deref<Target = Device>> DLSSSDK<D> {
     pub fn new(application_id: Option<u64>, device: D) -> Result<Self, DLSSError> {
-        let feature_info = NVSDK_NGX_FeatureCommonInfo {
+        let sdk_info = NVSDK_NGX_FeatureCommonInfo {
             // TODO: Allow passing list of extra DLSS shared library paths
             PathListInfo: NVSDK_NGX_PathListInfo {
                 Path: ptr::null(),
@@ -52,16 +55,32 @@ impl<D: Deref<Target = Device>> DLSSSDK<D> {
                 vk_device,
                 vk_gipa,
                 vk_gdpa,
-                &feature_info as *const _,
+                &sdk_info as *const _,
                 NVSDK_NGX_Version_NVSDK_NGX_Version_API,
             ))?;
 
-            // TODO: Check if DLSS is available on the system
+            let mut parameters = MaybeUninit::<*mut NVSDK_NGX_Parameter>::uninit();
+            check_ngx_result(NVSDK_NGX_VULKAN_GetCapabilityParameters(
+                parameters.as_mut_ptr(),
+            ))?;
+            let parameters = parameters.assume_init();
+
+            let mut dlss_supported = MaybeUninit::<c_int>::uninit();
+            NVSDK_NGX_Parameter_GetI(
+                parameters,
+                NVSDK_NGX_Parameter_SuperSampling_FeatureInitResult,
+                dlss_supported.as_mut_ptr(),
+            );
+            let dlss_supported = dlss_supported.assume_init();
+            if dlss_supported == 0 {
+                check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(parameters))?;
+                return Err(DLSSError::FeatureNotSupported);
+            }
 
             // TODO: Obtain optimal settings for each display resolution and DLSS Execution Mode
-        }
 
-        Ok(Self { device })
+            Ok(Self { device, parameters })
+        }
     }
 }
 
@@ -75,6 +94,8 @@ impl<D: Deref<Target = Device>> Drop for DLSSSDK<D> {
                     .device_wait_idle()
                     .expect("Failed to wait for idle device when destroying DLSSSDK");
 
+                check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(self.parameters))
+                    .expect("Failed to destroy DLSSSDK parameters");
                 check_ngx_result(NVSDK_NGX_VULKAN_Shutdown1(device.handle()))
                     .expect("Failed to destroy DLSSSDK");
             });
