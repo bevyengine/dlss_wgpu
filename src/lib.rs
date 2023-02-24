@@ -12,8 +12,8 @@ use wgpu::{CommandEncoder, Device};
 use wgpu_core::api::Vulkan;
 
 pub struct DLSSSDK<D: Deref<Target = Device> + Clone> {
-    device: D,
     parameters: *mut NVSDK_NGX_Parameter,
+    device: D,
 }
 
 impl<D: Deref<Target = Device> + Clone> DLSSSDK<D> {
