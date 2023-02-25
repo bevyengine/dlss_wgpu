@@ -1,8 +1,8 @@
 use crate::dlss::*;
 use crate::DLSSSDK;
 use glam::UVec2;
-use std::mem::MaybeUninit;
 use std::ops::Deref;
+use std::ptr;
 use wgpu::{CommandEncoder, Device};
 use wgpu_core::api::Vulkan;
 
@@ -98,16 +98,15 @@ impl<D: Deref<Target = Device> + Clone> DLSSContext<D> {
         };
 
         unsafe {
-            let mut feature = MaybeUninit::<*mut NVSDK_NGX_Handle>::uninit();
+            let feature = ptr::null_mut();
             check_ngx_result(NGX_VULKAN_CREATE_DLSS_EXT(
                 todo!("Command buffer"),
                 1,
                 1,
-                feature.as_mut_ptr(),
+                &mut feature as *mut _,
                 sdk.parameters,
                 &mut dlss_create_params as *mut _,
             ))?;
-            let feature = feature.assume_init();
 
             Ok(Self {
                 upscaled_resolution,
