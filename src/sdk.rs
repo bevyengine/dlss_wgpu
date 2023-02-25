@@ -64,7 +64,7 @@ impl<D: Deref<Target = Device> + Clone> DLSSSDK<D> {
             let mut dlss_supported = MaybeUninit::<c_int>::uninit();
             NVSDK_NGX_Parameter_GetI(
                 parameters,
-                todo!("NVSDK_NGX_Parameter_SuperSampling_FeatureInitResult"),
+                &NVSDK_NGX_Parameter_SuperSampling_FeatureInitResult[0] as *const u8 as *const i8,
                 dlss_supported.as_mut_ptr(),
             );
             let dlss_supported = dlss_supported.assume_init();

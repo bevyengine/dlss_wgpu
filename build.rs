@@ -45,6 +45,7 @@ fn main() {
         .clang_arg(format!("-I{vulkan_sdk}/{vulkan_sdk_include}"))
         .allowlist_function("NGX.*")
         .allowlist_function("NVSDK.*")
+        .allowlist_var("NVSDK.*")
         .allowlist_type("NVSDK.*")
         .blocklist_type("Vk.*")
         .blocklist_type("PFN_vk.*")
