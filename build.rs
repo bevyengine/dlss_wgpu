@@ -80,7 +80,6 @@ fn link_static_fns(
     vulkan_sdk_include: &str,
 ) {
     let obj_path = out_dir_path.join("extern.o");
-    let lib_path = out_dir_path.join("libextern.a");
 
     let clang_output = Command::new("clang")
         .arg("-O")
@@ -102,19 +101,26 @@ fn link_static_fns(
         );
     }
 
-    let ar_output = Command::new("ar")
+    #[cfg(not(target_os = "windows"))]
+    let lib_output = Command::new("ar")
         .arg("rcs")
-        .arg(lib_path)
+        .arg(out_dir_path.join("libextern.a"))
         .arg(obj_path)
         .output()
         .unwrap();
+    #[cfg(target_os = "windows")]
+    let lib_output = Command::new("lib").arg(&obj_path).output().unwrap();
 
-    if !ar_output.status.success() {
+    if !lib_output.status.success() {
         panic!(
             "Could not emit library file:\n{}",
-            String::from_utf8_lossy(&ar_output.stderr)
+            String::from_utf8_lossy(&lib_output.stderr)
         );
     }
 
+    println!(
+        "cargo:rustc-link-search=native={}",
+        out_dir_path.to_string_lossy()
+    );
     println!("cargo:rustc-link-lib=static=extern");
 }
