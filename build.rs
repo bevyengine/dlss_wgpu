@@ -93,7 +93,7 @@ fn link_static_fns(
         .arg(format!("-I{dlss_sdk}/include"))
         .arg(format!("-I{vulkan_sdk}/{vulkan_sdk_include}"))
         .output()
-        .unwrap();
+        .expect("Failed to run clang");
 
     if !clang_output.status.success() {
         panic!(
@@ -108,9 +108,12 @@ fn link_static_fns(
         .arg(out_dir_path.join("libextern.a"))
         .arg(obj_path)
         .output()
-        .unwrap();
+        .expect("Failed to run ar");
     #[cfg(target_os = "windows")]
-    let lib_output = Command::new("lib").arg(&obj_path).output().unwrap();
+    let lib_output = Command::new("lib")
+        .arg(&obj_path)
+        .output()
+        .expect("Failed to run lib.exe");
 
     if !lib_output.status.success() {
         panic!(
