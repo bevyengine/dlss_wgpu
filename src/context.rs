@@ -70,13 +70,13 @@ impl<D: Deref<Target = Device> + Clone> DlssContext<D> {
                 upscaled_resolution.x,
                 upscaled_resolution.y,
                 perf_quality_value,
-                &mut optimal_render_resolution.x as *mut _,
-                &mut optimal_render_resolution.y as *mut _,
-                &mut max_render_resolution.x as *mut _,
-                &mut max_render_resolution.y as *mut _,
-                &mut min_render_resolution.x as *mut _,
-                &mut min_render_resolution.y as *mut _,
-                &mut deprecated_sharpness as *mut _,
+                &mut optimal_render_resolution.x,
+                &mut optimal_render_resolution.y,
+                &mut max_render_resolution.x,
+                &mut max_render_resolution.y,
+                &mut min_render_resolution.x,
+                &mut min_render_resolution.y,
+                &mut deprecated_sharpness,
             ))?;
         }
         if preset == DlssPreset::Native {
