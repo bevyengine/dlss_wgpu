@@ -1,6 +1,5 @@
 use bindgen::Builder;
 use std::env;
-use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -9,8 +8,7 @@ fn main() {
     let dlss_sdk = env::var("DLSS_SDK")
         .expect("DLSS_SDK environment variable not set. Consult the dlss_wgpu readme.");
     let vulkan_sdk = env::var("VULKAN_SDK").expect("VULKAN_SDK environment variable not set");
-    let out_dir = env::var("OUT_DIR").unwrap();
-    let out_dir_path = PathBuf::from(out_dir.clone());
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     // Set DLSS static library search path
     #[cfg(not(target_os = "windows"))]
@@ -52,35 +50,15 @@ fn main() {
         .wrap_static_fns(true)
         .generate()
         .unwrap()
-        .write_to_file(out_dir_path.join("bindings.rs"))
+        .write_to_file(out_dir.join("bindings.rs"))
         .unwrap();
 
     // Generate static library for static inline functions
-    link_static_fns(out_dir_path, &dlss_sdk, &vulkan_sdk, vulkan_sdk_include);
-
-    // Copy DLSS shared library to target dir
-    #[cfg(not(target_os = "windows"))]
-    let (platform, shared_lib) = ("Linux_x86_64", "libnvidia-ngx-dlss.so.3.1.1");
-    #[cfg(target_os = "windows")]
-    let (platform, shared_lib) = ("Windows_x86_64", "nvngx_dlss.dll");
-    #[cfg(debug_assertions)]
-    let profile = "dev";
-    #[cfg(not(debug_assertions))]
-    let profile = "rel";
-    fs::copy(
-        format!("{dlss_sdk}/lib/{platform}/{profile}/{shared_lib}"),
-        format!("{out_dir}/../../{shared_lib}"),
-    )
-    .unwrap();
+    link_static_fns(out_dir, &dlss_sdk, &vulkan_sdk, vulkan_sdk_include);
 }
 
-fn link_static_fns(
-    out_dir_path: PathBuf,
-    dlss_sdk: &str,
-    vulkan_sdk: &str,
-    vulkan_sdk_include: &str,
-) {
-    let obj_path = out_dir_path.join("extern.o");
+fn link_static_fns(out_dir: PathBuf, dlss_sdk: &str, vulkan_sdk: &str, vulkan_sdk_include: &str) {
+    let obj_path = out_dir.join("extern.o");
 
     let clang_output = Command::new("clang")
         .arg("-O")
@@ -105,7 +83,7 @@ fn link_static_fns(
     #[cfg(not(target_os = "windows"))]
     let lib_output = Command::new("ar")
         .arg("rcs")
-        .arg(out_dir_path.join("libextern.a"))
+        .arg(out_dir.join("libextern.a"))
         .arg(obj_path)
         .output()
         .expect("Failed to run ar");
@@ -124,7 +102,7 @@ fn link_static_fns(
 
     println!(
         "cargo:rustc-link-search=native={}",
-        out_dir_path.to_string_lossy()
+        out_dir.to_string_lossy()
     );
     println!("cargo:rustc-link-lib=static=extern");
 }

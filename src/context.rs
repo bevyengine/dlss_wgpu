@@ -103,9 +103,9 @@ impl<D: Deref<Target = Device> + Clone> DlssContext<D> {
                 todo!("Command buffer"),
                 1,
                 1,
-                &mut feature as *mut _,
+                &mut feature,
                 sdk.parameters,
-                &mut dlss_create_params as *mut _,
+                &mut dlss_create_params,
             ))?;
 
             Ok(Self {

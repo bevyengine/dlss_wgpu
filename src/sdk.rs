@@ -1,6 +1,6 @@
 use crate::dlss::*;
 use std::env;
-use std::ffi::CString;
+use std::ffi::{CString, OsString};
 use std::mem::MaybeUninit;
 use std::ops::Deref;
 use std::ptr;
@@ -32,12 +32,9 @@ impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
             },
             ApplicationDataPath: os_str_to_wchar(env::temp_dir().as_os_str()).as_ptr(),
             FeatureInfo: &NVSDK_NGX_FeatureCommonInfo {
-                // TODO: Allow passing list of extra DLSS shared library paths
-                PathListInfo: NVSDK_NGX_PathListInfo {
-                    Path: ptr::null(),
-                    Length: 0,
-                },
+                PathListInfo: dlss_shared_libary_paths(),
                 InternalData: ptr::null_mut(),
+                // TODO: Allow configuring logging
                 LoggingInfo: NVSDK_NGX_LoggingInfo {
                     LoggingCallback: None,
                     MinimumLoggingLevel: NVSDK_NGX_Logging_Level_NVSDK_NGX_LOGGING_LEVEL_OFF,
@@ -73,12 +70,9 @@ impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
         let project_id = CString::new(project_id.to_string()).unwrap();
         let engine_version = CString::new(env!("CARGO_PKG_VERSION")).unwrap();
         let sdk_info = NVSDK_NGX_FeatureCommonInfo {
-            // TODO: Allow passing list of extra DLSS shared library paths
-            PathListInfo: NVSDK_NGX_PathListInfo {
-                Path: ptr::null(),
-                Length: 0,
-            },
+            PathListInfo: dlss_shared_libary_paths(),
             InternalData: ptr::null_mut(),
+            // TODO: Allow configuring logging
             LoggingInfo: NVSDK_NGX_LoggingInfo {
                 LoggingCallback: None,
                 MinimumLoggingLevel: NVSDK_NGX_Logging_Level_NVSDK_NGX_LOGGING_LEVEL_OFF,
@@ -116,17 +110,14 @@ impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
             ))?;
 
             let mut parameters = ptr::null_mut();
-            check_ngx_result(NVSDK_NGX_VULKAN_GetCapabilityParameters(
-                &mut parameters as *mut _,
-            ))?;
+            check_ngx_result(NVSDK_NGX_VULKAN_GetCapabilityParameters(&mut parameters))?;
 
-            let mut dlss_supported = MaybeUninit::uninit();
+            let mut dlss_supported = 0;
             NVSDK_NGX_Parameter_GetI(
                 parameters,
-                &NVSDK_NGX_Parameter_SuperSampling_FeatureInitResult[0] as *const u8 as *const i8,
-                dlss_supported.as_mut_ptr(),
+                &NVSDK_NGX_Parameter_SuperSampling_Available[0] as *const u8 as *const i8,
+                &mut dlss_supported,
             );
-            let dlss_supported = dlss_supported.assume_init();
             if dlss_supported == 0 {
                 check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(parameters))?;
                 return Err(DlssError::FeatureNotSupported);
@@ -153,5 +144,26 @@ impl<D: Deref<Target = Device> + Clone> Drop for DlssSdk<D> {
                     .expect("Failed to destroy DlssSdk");
             });
         }
+    }
+}
+
+pub fn dlss_shared_libary_paths() -> NVSDK_NGX_PathListInfo {
+    #[cfg(not(target_os = "windows"))]
+    let platform = "Linux_x86_64";
+    #[cfg(target_os = "windows")]
+    let platform = "Windowsx86_64";
+    #[cfg(debug_assertions)]
+    let profile = "dev";
+    #[cfg(not(debug_assertions))]
+    let profile = "rel";
+    let sdk_path = format!("{}/lib/{platform}/{profile}", env!("DLSS_SDK"));
+
+    NVSDK_NGX_PathListInfo {
+        Path: [
+            os_str_to_wchar(&OsString::from(".")).as_ptr(),
+            os_str_to_wchar(&OsString::from(sdk_path)).as_ptr(),
+        ]
+        .as_ptr(),
+        Length: 2,
     }
 }
