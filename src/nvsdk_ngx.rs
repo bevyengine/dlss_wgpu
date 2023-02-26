@@ -44,6 +44,16 @@ bitflags::bitflags! {
 }
 
 #[derive(thiserror::Error, Debug)]
+pub enum RequestDeviceError {
+    #[error(transparent)]
+    Wgpu(#[from] wgpu::RequestDeviceError),
+    #[error(transparent)]
+    Vulkan(#[from] ash::vk::Result),
+    #[error(transparent)]
+    Dlss(#[from] DlssError),
+}
+
+#[derive(thiserror::Error, Debug)]
 pub enum DlssError {
     #[error("TODO")]
     FeatureNotSupported,
@@ -121,5 +131,9 @@ pub fn os_str_to_wchar(s: &OsStr) -> Vec<wchar_t> {
 
 #[cfg(not(target_os = "windows"))]
 pub fn os_str_to_wchar(s: &OsStr) -> Vec<wchar_t> {
-    s.to_str().unwrap_or("").chars().map(|c| c as wchar_t).collect()
+    s.to_str()
+        .unwrap_or("")
+        .chars()
+        .map(|c| c as wchar_t)
+        .collect()
 }
