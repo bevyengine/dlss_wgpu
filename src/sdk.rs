@@ -14,7 +14,7 @@ pub struct DLSSSDK<D: Deref<Target = Device> + Clone> {
 }
 
 impl<D: Deref<Target = Device> + Clone> DLSSSDK<D> {
-    pub fn dlss_supported(project_id: Uuid, device: D) -> Result<bool, DLSSError> {
+    pub fn dlss_available(project_id: Uuid, device: D) -> Result<bool, DLSSError> {
         let project_id = CString::new(project_id.to_string()).unwrap();
         let engine_version = CString::new(env!("CARGO_PKG_VERSION")).unwrap();
         let sdk_info = NVSDK_NGX_FeatureDiscoveryInfo {
