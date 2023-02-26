@@ -2,6 +2,6 @@ mod context;
 mod dlss;
 mod sdk;
 
-pub use context::DLSSContext;
-pub use dlss::{DLSSError, DLSSFeatureFlags, DLSSPreset};
-pub use sdk::DLSSSDK;
+pub use context::DlssContext;
+pub use dlss::{DlssError, DlssFeatureFlags, DlssPreset};
+pub use sdk::DlssSdk;

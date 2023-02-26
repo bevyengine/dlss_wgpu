@@ -8,13 +8,13 @@ use uuid::Uuid;
 use wgpu::Device;
 use wgpu_core::api::Vulkan;
 
-pub struct DLSSSDK<D: Deref<Target = Device> + Clone> {
+pub struct DlssSdk<D: Deref<Target = Device> + Clone> {
     pub(crate) parameters: *mut NVSDK_NGX_Parameter,
     pub(crate) device: D,
 }
 
-impl<D: Deref<Target = Device> + Clone> DLSSSDK<D> {
-    pub fn dlss_available(project_id: Uuid, device: D) -> Result<bool, DLSSError> {
+impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
+    pub fn dlss_available(project_id: Uuid, device: D) -> Result<bool, DlssError> {
         let project_id = CString::new(project_id.to_string()).unwrap();
         let engine_version = CString::new(env!("CARGO_PKG_VERSION")).unwrap();
         let sdk_info = NVSDK_NGX_FeatureDiscoveryInfo {
@@ -69,7 +69,7 @@ impl<D: Deref<Target = Device> + Clone> DLSSSDK<D> {
         }
     }
 
-    pub fn new(project_id: Uuid, device: D) -> Result<Self, DLSSError> {
+    pub fn new(project_id: Uuid, device: D) -> Result<Self, DlssError> {
         let project_id = CString::new(project_id.to_string()).unwrap();
         let engine_version = CString::new(env!("CARGO_PKG_VERSION")).unwrap();
         let sdk_info = NVSDK_NGX_FeatureCommonInfo {
@@ -129,7 +129,7 @@ impl<D: Deref<Target = Device> + Clone> DLSSSDK<D> {
             let dlss_supported = dlss_supported.assume_init();
             if dlss_supported == 0 {
                 check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(parameters))?;
-                return Err(DLSSError::FeatureNotSupported);
+                return Err(DlssError::FeatureNotSupported);
             }
 
             Ok(Self { parameters, device })
@@ -137,7 +137,7 @@ impl<D: Deref<Target = Device> + Clone> DLSSSDK<D> {
     }
 }
 
-impl<D: Deref<Target = Device> + Clone> Drop for DLSSSDK<D> {
+impl<D: Deref<Target = Device> + Clone> Drop for DlssSdk<D> {
     fn drop(&mut self) {
         unsafe {
             self.device.as_hal::<Vulkan, _, _>(|device| {
@@ -145,12 +145,12 @@ impl<D: Deref<Target = Device> + Clone> Drop for DLSSSDK<D> {
 
                 device
                     .device_wait_idle()
-                    .expect("Failed to wait for idle device when destroying DLSSSDK");
+                    .expect("Failed to wait for idle device when destroying DlssSdk");
 
                 check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(self.parameters))
-                    .expect("Failed to destroy DLSSSDK parameters");
+                    .expect("Failed to destroy DlssSdk parameters");
                 check_ngx_result(NVSDK_NGX_VULKAN_Shutdown1(device.handle()))
-                    .expect("Failed to destroy DLSSSDK");
+                    .expect("Failed to destroy DlssSdk");
             });
         }
     }

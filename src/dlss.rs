@@ -21,7 +21,7 @@ type VkPhysicalDevice = ash::vk::PhysicalDevice;
 use std::ffi::OsStr;
 
 #[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
-pub enum DLSSPreset {
+pub enum DlssPreset {
     #[default]
     Auto,
     Native,
@@ -33,7 +33,7 @@ pub enum DLSSPreset {
 }
 
 bitflags::bitflags! {
-    pub struct DLSSFeatureFlags: NVSDK_NGX_DLSS_Feature_Flags {
+    pub struct DlssFeatureFlags: NVSDK_NGX_DLSS_Feature_Flags {
         const HighDynamicRange = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
         const LowResolutionMotionVectors = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
         const JitteredMotionVectors = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
@@ -44,7 +44,7 @@ bitflags::bitflags! {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub enum DLSSError {
+pub enum DlssError {
     #[error("TODO")]
     FeatureNotSupported,
     #[error("TODO")]
@@ -83,31 +83,31 @@ pub enum DLSSError {
     NotImplemented,
 }
 
-pub fn check_ngx_result(result: NVSDK_NGX_Result) -> Result<(), DLSSError> {
+pub fn check_ngx_result(result: NVSDK_NGX_Result) -> Result<(), DlssError> {
     match result {
         NVSDK_NGX_Result_Success => Ok(()),
-        NVSDK_NGX_Result_FAIL_FeatureNotSupported => Err(DLSSError::FeatureNotSupported),
-        NVSDK_NGX_RESULT_FAIL_PlatformError => Err(DLSSError::PlatformError),
-        NVSDK_NGX_RESULT_FAIL_FeatureAlreadyExists => Err(DLSSError::FeatureAlreadyExists),
-        NVSDK_NGX_RESULT_FAIL_FeatureNotFound => Err(DLSSError::FeatureNotFound),
-        NVSDK_NGX_RESULT_FAIL_InvalidParameters => Err(DLSSError::InvalidParameters),
-        NVSDK_NGX_RESULT_FAIL_ScratchBufferTooSmall => Err(DLSSError::ScratchBufferTooSmall),
-        NVSDK_NGX_RESULT_FAIL_NotInitialized => Err(DLSSError::NotInitialized),
-        NVSDK_NGX_RESULT_FAIL_UnsupportedInputFormat => Err(DLSSError::UnsupportedInputFormat),
-        NVSDK_NGX_RESULT_FAIL_RWFlagMissing => Err(DLSSError::RWFlagMissing),
-        NVSDK_NGX_RESULT_FAIL_MissingInput => Err(DLSSError::MissingInput),
+        NVSDK_NGX_Result_FAIL_FeatureNotSupported => Err(DlssError::FeatureNotSupported),
+        NVSDK_NGX_RESULT_FAIL_PlatformError => Err(DlssError::PlatformError),
+        NVSDK_NGX_RESULT_FAIL_FeatureAlreadyExists => Err(DlssError::FeatureAlreadyExists),
+        NVSDK_NGX_RESULT_FAIL_FeatureNotFound => Err(DlssError::FeatureNotFound),
+        NVSDK_NGX_RESULT_FAIL_InvalidParameters => Err(DlssError::InvalidParameters),
+        NVSDK_NGX_RESULT_FAIL_ScratchBufferTooSmall => Err(DlssError::ScratchBufferTooSmall),
+        NVSDK_NGX_RESULT_FAIL_NotInitialized => Err(DlssError::NotInitialized),
+        NVSDK_NGX_RESULT_FAIL_UnsupportedInputFormat => Err(DlssError::UnsupportedInputFormat),
+        NVSDK_NGX_RESULT_FAIL_RWFlagMissing => Err(DlssError::RWFlagMissing),
+        NVSDK_NGX_RESULT_FAIL_MissingInput => Err(DlssError::MissingInput),
         NVSDK_NGX_RESULT_FAIL_UnableToInitializeFeature => {
-            Err(DLSSError::UnableToInitializeFeature)
+            Err(DlssError::UnableToInitializeFeature)
         }
-        NVSDK_NGX_RESULT_FAIL_OutOfDate => Err(DLSSError::OutOfDate),
-        NVSDK_NGX_RESULT_FAIL_OutOfGPUMemory => Err(DLSSError::OutOfGPUMemory),
-        NVSDK_NGX_RESULT_FAIL_UnsupportedFormat => Err(DLSSError::UnsupportedFormat),
+        NVSDK_NGX_RESULT_FAIL_OutOfDate => Err(DlssError::OutOfDate),
+        NVSDK_NGX_RESULT_FAIL_OutOfGPUMemory => Err(DlssError::OutOfGPUMemory),
+        NVSDK_NGX_RESULT_FAIL_UnsupportedFormat => Err(DlssError::UnsupportedFormat),
         NVSDK_NGX_RESULT_FAIL_UnableToWriteToAppDataPath => {
-            Err(DLSSError::UnableToWriteToAppDataPath)
+            Err(DlssError::UnableToWriteToAppDataPath)
         }
-        NVSDK_NGX_RESULT_FAIL_UnsupportedParameter => Err(DLSSError::UnsupportedParameter),
-        NVSDK_NGX_RESULT_FAIL_Denied => Err(DLSSError::Denied),
-        NVSDK_NGX_RESULT_FAIL_NotImplemented => Err(DLSSError::NotImplemented),
+        NVSDK_NGX_RESULT_FAIL_UnsupportedParameter => Err(DlssError::UnsupportedParameter),
+        NVSDK_NGX_RESULT_FAIL_Denied => Err(DlssError::Denied),
+        NVSDK_NGX_RESULT_FAIL_NotImplemented => Err(DlssError::NotImplemented),
         _ => unreachable!(),
     }
 }

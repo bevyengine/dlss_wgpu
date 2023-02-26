@@ -1,5 +1,5 @@
 use crate::dlss::*;
-use crate::DLSSSDK;
+use crate::DlssSdk;
 use glam::UVec2;
 use std::ops::Deref;
 use std::ptr;
@@ -7,7 +7,7 @@ use wgpu::{CommandEncoder, Device};
 use wgpu_core::api::Vulkan;
 
 // TODO: Rather than clone device, ensure context does not live longer than sdk?
-pub struct DLSSContext<D: Deref<Target = Device> + Clone> {
+pub struct DlssContext<D: Deref<Target = Device> + Clone> {
     upscaled_resolution: UVec2,
     min_render_resolution: UVec2,
     max_render_resolution: UVec2,
@@ -15,19 +15,19 @@ pub struct DLSSContext<D: Deref<Target = Device> + Clone> {
     device: D,
 }
 
-impl<D: Deref<Target = Device> + Clone> DLSSContext<D> {
+impl<D: Deref<Target = Device> + Clone> DlssContext<D> {
     pub fn new(
         upscaled_resolution: UVec2,
-        preset: DLSSPreset,
-        mut feature_flags: DLSSFeatureFlags,
-        sdk: &mut DLSSSDK<D>,
+        preset: DlssPreset,
+        mut feature_flags: DlssFeatureFlags,
+        sdk: &mut DlssSdk<D>,
         command_encoder: &mut CommandEncoder,
-    ) -> Result<Self, DLSSError> {
-        let enable_output_subrects = feature_flags.contains(DLSSFeatureFlags::PartialTextureInputs);
-        feature_flags.remove(DLSSFeatureFlags::PartialTextureInputs);
+    ) -> Result<Self, DlssError> {
+        let enable_output_subrects = feature_flags.contains(DlssFeatureFlags::PartialTextureInputs);
+        feature_flags.remove(DlssFeatureFlags::PartialTextureInputs);
 
         let perf_quality_value = match preset {
-            DLSSPreset::Auto => {
+            DlssPreset::Auto => {
                 let mega_pixels =
                     (upscaled_resolution.x * upscaled_resolution.y) as f32 / 1_000_000.0;
 
@@ -39,23 +39,23 @@ impl<D: Deref<Target = Device> + Clone> DLSSContext<D> {
                     NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraPerformance
                 }
             }
-            DLSSPreset::Native => {
+            DlssPreset::Native => {
                 // Doesn't really matter
                 NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraQuality
             }
-            DLSSPreset::UltraQuality => {
+            DlssPreset::UltraQuality => {
                 NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraQuality
             }
-            DLSSPreset::Quality => {
+            DlssPreset::Quality => {
                 NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxQuality
             }
-            DLSSPreset::Balanced => {
+            DlssPreset::Balanced => {
                 NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_Balanced
             }
-            DLSSPreset::Performance => {
+            DlssPreset::Performance => {
                 NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxPerf
             }
-            DLSSPreset::UltraPerformance => {
+            DlssPreset::UltraPerformance => {
                 NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraPerformance
             }
         };
@@ -79,7 +79,7 @@ impl<D: Deref<Target = Device> + Clone> DLSSContext<D> {
                 &mut deprecated_sharpness as *mut _,
             ))?;
         }
-        if preset == DLSSPreset::Native {
+        if preset == DlssPreset::Native {
             optimal_render_resolution = upscaled_resolution;
             min_render_resolution = upscaled_resolution;
             max_render_resolution = upscaled_resolution;
@@ -135,7 +135,7 @@ impl<D: Deref<Target = Device> + Clone> DLSSContext<D> {
     }
 }
 
-impl<D: Deref<Target = Device> + Clone> Drop for DLSSContext<D> {
+impl<D: Deref<Target = Device> + Clone> Drop for DlssContext<D> {
     fn drop(&mut self) {
         unsafe {
             self.device.as_hal::<Vulkan, _, _>(|device| {
@@ -143,10 +143,10 @@ impl<D: Deref<Target = Device> + Clone> Drop for DLSSContext<D> {
                     .unwrap()
                     .raw_device()
                     .device_wait_idle()
-                    .expect("Failed to wait for idle device when destroying DLSSContext");
+                    .expect("Failed to wait for idle device when destroying DlssContext");
 
                 check_ngx_result(NVSDK_NGX_VULKAN_ReleaseFeature(self.feature))
-                    .expect("Failed to destroy DLSSContext feature");
+                    .expect("Failed to destroy DlssContext feature");
             });
         }
     }
