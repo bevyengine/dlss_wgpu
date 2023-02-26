@@ -1,4 +1,4 @@
-use crate::dlss::*;
+use crate::nvsdk_ngx::*;
 use std::env;
 use std::ffi::{CString, OsString};
 use std::mem::MaybeUninit;

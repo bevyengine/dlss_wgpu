@@ -1,4 +1,4 @@
-use crate::dlss::*;
+use crate::nvsdk_ngx::*;
 use crate::DlssSdk;
 use glam::UVec2;
 use std::ops::Deref;
