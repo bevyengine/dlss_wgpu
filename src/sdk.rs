@@ -151,7 +151,7 @@ pub fn dlss_shared_libary_paths() -> NVSDK_NGX_PathListInfo {
     #[cfg(not(target_os = "windows"))]
     let platform = "Linux_x86_64";
     #[cfg(target_os = "windows")]
-    let platform = "Windowsx86_64";
+    let platform = "Windows_x86_64";
     #[cfg(debug_assertions)]
     let profile = "dev";
     #[cfg(not(debug_assertions))]
