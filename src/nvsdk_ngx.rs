@@ -46,11 +46,13 @@ bitflags::bitflags! {
 #[derive(thiserror::Error, Debug)]
 pub enum RequestDeviceError {
     #[error(transparent)]
-    Wgpu(#[from] wgpu::RequestDeviceError),
+    WgpuRequestDeviceError(#[from] wgpu::RequestDeviceError),
     #[error(transparent)]
-    Vulkan(#[from] ash::vk::Result),
+    DeviceError(#[from] wgpu_hal::DeviceError),
     #[error(transparent)]
-    Dlss(#[from] DlssError),
+    VulkanError(#[from] ash::vk::Result),
+    #[error(transparent)]
+    DlssError(#[from] DlssError),
 }
 
 #[derive(thiserror::Error, Debug)]

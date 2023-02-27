@@ -9,7 +9,6 @@ use std::slice;
 use uuid::Uuid;
 use wgpu::{Adapter, Device, DeviceDescriptor, Queue};
 use wgpu_core::api::Vulkan;
-use wgpu_hal::OpenDevice;
 
 pub struct DlssSdk<D: Deref<Target = Device> + Clone> {
     pub(crate) parameters: *mut NVSDK_NGX_Parameter,
@@ -34,25 +33,32 @@ impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
                     let vk_instance = adapter.shared_instance().raw_instance().clone();
                     let vk_physical_device = adapter.raw_physical_device();
 
-                    let device_extensions = {
-                        let mut device_extensions = ptr::null_mut();
-                        let mut device_extension_count = 0;
+                    let dlss_device_extensions = {
+                        let mut dlss_device_extensions = ptr::null_mut();
+                        let mut dlss_device_extension_count = 0;
                         check_ngx_result(NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(
                             vk_instance.handle(),
                             vk_physical_device,
                             &feature_info,
-                            &mut device_extension_count,
-                            &mut device_extensions,
+                            &mut dlss_device_extension_count,
+                            &mut dlss_device_extensions,
                         ))?;
-                        slice::from_raw_parts(device_extensions, device_extension_count as usize)
+                        slice::from_raw_parts(
+                            dlss_device_extensions,
+                            dlss_device_extension_count as usize,
+                        )
                     };
 
                     let vk_device = vk_instance.create_device(vk_physical_device, todo!(), None)?;
 
-                    Ok(OpenDevice {
-                        device: todo!(),
-                        queue: todo!(),
-                    })
+                    Ok(adapter.device_from_raw(
+                        vk_device,
+                        true,
+                        todo!(),
+                        todo!(),
+                        todo!(),
+                        todo!(),
+                    )?)
                 });
 
             Ok(adapter.create_device_from_hal::<Vulkan>(
