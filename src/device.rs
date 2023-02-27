@@ -6,7 +6,6 @@ use ash::vk::{DeviceCreateInfo, DeviceQueueCreateInfo};
 use std::ffi::CStr;
 use std::path::Path;
 use std::ptr;
-use std::slice;
 use uuid::Uuid;
 use wgpu::{Adapter, Device, DeviceDescriptor, Queue};
 use wgpu_core::api::Vulkan;
@@ -25,20 +24,28 @@ pub fn request_device(
                 let vk_physical_device = adapter.raw_physical_device();
 
                 let dlss_device_extensions = {
-                    let mut dlss_device_extensions = ptr::null_mut();
-                    let mut dlss_device_extension_count = 0;
                     let feature_info = FeatureInfo::new(project_id);
+                    let mut dlss_device_extension_count = 0;
+
                     check_ngx_result(NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(
                         vk_instance.handle(),
                         vk_physical_device,
                         &feature_info.as_nvsdk(),
                         &mut dlss_device_extension_count,
-                        &mut dlss_device_extensions,
+                        ptr::null_mut(),
                     ))?;
-                    slice::from_raw_parts(
-                        dlss_device_extensions,
-                        dlss_device_extension_count as usize,
-                    )
+
+                    let mut dlss_device_exentions =
+                        Vec::with_capacity(dlss_device_extension_count as usize);
+                    check_ngx_result(NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(
+                        vk_instance.handle(),
+                        vk_physical_device,
+                        &feature_info.as_nvsdk(),
+                        &mut dlss_device_extension_count,
+                        &mut dlss_device_exentions.as_mut_ptr(),
+                    ))?;
+
+                    dlss_device_exentions.into_boxed_slice()
                 };
 
                 let mut extensions = adapter.required_device_extensions(device_descriptor.features);
