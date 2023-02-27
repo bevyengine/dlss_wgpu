@@ -3,11 +3,9 @@ use std::env;
 use std::ffi::{CStr, CString, OsString};
 use std::mem::MaybeUninit;
 use std::ops::Deref;
-use std::path::Path;
 use std::ptr;
-use std::slice;
 use uuid::Uuid;
-use wgpu::{Adapter, Device, DeviceDescriptor, Queue};
+use wgpu::Device;
 use wgpu_core::api::Vulkan;
 
 pub struct DlssSdk<D: Deref<Target = Device> + Clone> {
@@ -16,59 +14,6 @@ pub struct DlssSdk<D: Deref<Target = Device> + Clone> {
 }
 
 impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
-    pub fn request_device(
-        project_id: Uuid,
-        adapter: &Adapter,
-        device_descriptor: &DeviceDescriptor,
-        trace_path: Option<&Path>,
-    ) -> Result<(Device, Queue), RequestDeviceError> {
-        let project_id = CString::new(project_id.to_string()).unwrap();
-        let engine_version = CString::new(env!("CARGO_PKG_VERSION")).unwrap();
-        let feature_info = feature_info(&project_id, &engine_version);
-
-        unsafe {
-            let open_device: Result<_, RequestDeviceError> =
-                adapter.as_hal::<Vulkan, _, _>(|adapter| {
-                    let adapter = adapter.unwrap();
-                    let vk_instance = adapter.shared_instance().raw_instance().clone();
-                    let vk_physical_device = adapter.raw_physical_device();
-
-                    let dlss_device_extensions = {
-                        let mut dlss_device_extensions = ptr::null_mut();
-                        let mut dlss_device_extension_count = 0;
-                        check_ngx_result(NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(
-                            vk_instance.handle(),
-                            vk_physical_device,
-                            &feature_info,
-                            &mut dlss_device_extension_count,
-                            &mut dlss_device_extensions,
-                        ))?;
-                        slice::from_raw_parts(
-                            dlss_device_extensions,
-                            dlss_device_extension_count as usize,
-                        )
-                    };
-
-                    let vk_device = vk_instance.create_device(vk_physical_device, todo!(), None)?;
-
-                    Ok(adapter.device_from_raw(
-                        vk_device,
-                        true,
-                        todo!(),
-                        todo!(),
-                        todo!(),
-                        todo!(),
-                    )?)
-                });
-
-            Ok(adapter.create_device_from_hal::<Vulkan>(
-                open_device?,
-                device_descriptor,
-                trace_path,
-            )?)
-        }
-    }
-
     pub fn dlss_available(project_id: Uuid, device: D) -> Result<bool, DlssError> {
         let project_id = CString::new(project_id.to_string()).unwrap();
         let engine_version = CString::new(env!("CARGO_PKG_VERSION")).unwrap();
@@ -160,7 +105,7 @@ impl<D: Deref<Target = Device> + Clone> Drop for DlssSdk<D> {
     }
 }
 
-fn feature_info(project_id: &CStr, engine_version: &CStr) -> NVSDK_NGX_FeatureDiscoveryInfo {
+pub fn feature_info(project_id: &CStr, engine_version: &CStr) -> NVSDK_NGX_FeatureDiscoveryInfo {
     NVSDK_NGX_FeatureDiscoveryInfo {
         SDKVersion: NVSDK_NGX_Version_NVSDK_NGX_Version_API,
         FeatureID: NVSDK_NGX_Feature_NVSDK_NGX_Feature_SuperSampling,
