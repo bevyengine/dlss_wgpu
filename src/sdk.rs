@@ -71,11 +71,15 @@ impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
             })?;
 
             let mut dlss_supported = 0;
-            check_ngx_result(NVSDK_NGX_Parameter_GetI(
+            let result = check_ngx_result(NVSDK_NGX_Parameter_GetI(
                 parameters,
                 NVSDK_NGX_Parameter_SuperSampling_Available.as_ptr() as *const _,
                 &mut dlss_supported,
-            ))?;
+            ));
+            if result.is_err() {
+                check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(parameters))?;
+                result?;
+            }
             if dlss_supported == 0 {
                 check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(parameters))?;
                 return Err(DlssError::FeatureNotSupported);
