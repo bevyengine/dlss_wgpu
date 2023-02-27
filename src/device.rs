@@ -25,7 +25,7 @@ pub fn request_device(
         let open_device: Result<_, RequestDeviceError> =
             adapter.as_hal::<Vulkan, _, _>(|adapter| {
                 let adapter = adapter.unwrap();
-                let vk_instance = adapter.shared_instance().raw_instance().clone();
+                let vk_instance = adapter.shared_instance().raw_instance();
                 let vk_physical_device = adapter.raw_physical_device();
 
                 let dlss_device_extensions = {
