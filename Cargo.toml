@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wgpu = "0.15"
-wgpu-core = "0.15"
-wgpu-hal = "0.15"
+wgpu = { git = "https://github.com/jms55/wgpu" }
+wgpu-core = { git = "https://github.com/jms55/wgpu" }
+wgpu-hal = { git = "https://github.com/jms55/wgpu" }
 ash = "0.37"
 glam = "0.23"
 uuid = "1.3"

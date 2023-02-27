@@ -7,9 +7,9 @@ use wgpu::{CommandEncoder, Device};
 use wgpu_core::api::Vulkan;
 
 pub struct DlssContext<'a, D: Deref<Target = Device> + Clone> {
-    pub upscaled_resolution: UVec2,
-    pub min_render_resolution: UVec2,
-    pub max_render_resolution: UVec2,
+    upscaled_resolution: UVec2,
+    min_render_resolution: UVec2,
+    max_render_resolution: UVec2,
     sdk: &'a DlssSdk<D>,
     feature: *mut NVSDK_NGX_Handle,
 }
@@ -97,22 +97,24 @@ impl<'a, D: Deref<Target = Device> + Clone> DlssContext<'a, D> {
         };
 
         unsafe {
-            let feature = ptr::null_mut();
-            check_ngx_result(NGX_VULKAN_CREATE_DLSS_EXT(
-                todo!("Command buffer"),
-                1,
-                1,
-                &mut feature,
-                sdk.parameters,
-                &mut dlss_create_params,
-            ))?;
+            command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
+                let mut feature = ptr::null_mut();
+                check_ngx_result(NGX_VULKAN_CREATE_DLSS_EXT(
+                    command_encoder.unwrap().raw_handle(),
+                    1,
+                    1,
+                    &mut feature,
+                    sdk.parameters,
+                    &mut dlss_create_params,
+                ))?;
 
-            Ok(Self {
-                upscaled_resolution,
-                min_render_resolution,
-                max_render_resolution,
-                sdk,
-                feature,
+                Ok(Self {
+                    upscaled_resolution,
+                    min_render_resolution,
+                    max_render_resolution,
+                    sdk,
+                    feature,
+                })
             })
         }
     }
