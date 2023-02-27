@@ -73,7 +73,7 @@ impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
             let mut dlss_supported = 0;
             check_ngx_result(NVSDK_NGX_Parameter_GetI(
                 parameters,
-                &NVSDK_NGX_Parameter_SuperSampling_Available[0] as *const u8 as *const i8,
+                NVSDK_NGX_Parameter_SuperSampling_Available.as_ptr() as *const _,
                 &mut dlss_supported,
             ))?;
             if dlss_supported == 0 {
