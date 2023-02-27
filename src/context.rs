@@ -6,22 +6,21 @@ use std::ptr;
 use wgpu::{CommandEncoder, Device};
 use wgpu_core::api::Vulkan;
 
-// TODO: Rather than clone device, ensure context does not live longer than sdk?
-pub struct DlssContext<D: Deref<Target = Device> + Clone> {
-    upscaled_resolution: UVec2,
-    min_render_resolution: UVec2,
-    max_render_resolution: UVec2,
+pub struct DlssContext<'a, D: Deref<Target = Device> + Clone> {
+    pub upscaled_resolution: UVec2,
+    pub min_render_resolution: UVec2,
+    pub max_render_resolution: UVec2,
+    sdk: &'a DlssSdk<D>,
     feature: *mut NVSDK_NGX_Handle,
-    device: D,
 }
 
-impl<D: Deref<Target = Device> + Clone> DlssContext<D> {
-    pub fn new(
+impl<'a, D: Deref<Target = Device> + Clone> DlssContext<'a, D> {
+    pub fn new<'f>(
         upscaled_resolution: UVec2,
         preset: DlssPreset,
         mut feature_flags: DlssFeatureFlags,
-        sdk: &mut DlssSdk<D>,
-        command_encoder: &mut CommandEncoder,
+        sdk: &'a mut DlssSdk<D>,
+        command_encoder: &'f mut CommandEncoder,
     ) -> Result<Self, DlssError> {
         let enable_output_subrects = feature_flags.contains(DlssFeatureFlags::PartialTextureInputs);
         feature_flags.remove(DlssFeatureFlags::PartialTextureInputs);
@@ -112,8 +111,8 @@ impl<D: Deref<Target = Device> + Clone> DlssContext<D> {
                 upscaled_resolution,
                 min_render_resolution,
                 max_render_resolution,
+                sdk,
                 feature,
-                device: sdk.device.clone(),
             })
         }
     }
@@ -135,10 +134,10 @@ impl<D: Deref<Target = Device> + Clone> DlssContext<D> {
     }
 }
 
-impl<D: Deref<Target = Device> + Clone> Drop for DlssContext<D> {
+impl<D: Deref<Target = Device> + Clone> Drop for DlssContext<'_, D> {
     fn drop(&mut self) {
         unsafe {
-            self.device.as_hal::<Vulkan, _, _>(|device| {
+            self.sdk.device.as_hal::<Vulkan, _, _>(|device| {
                 device
                     .unwrap()
                     .raw_device()
