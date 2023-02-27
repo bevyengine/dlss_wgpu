@@ -14,7 +14,7 @@ pub struct DlssSdk<D: Deref<Target = Device> + Clone> {
 }
 
 impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
-    pub fn dlss_available(project_id: Uuid, device: D) -> Result<bool, DlssError> {
+    pub fn dlss_available(project_id: Uuid, device: &D) -> Result<bool, DlssError> {
         let project_id = CString::new(project_id.to_string()).unwrap();
         let engine_version = CString::new(env!("CARGO_PKG_VERSION")).unwrap();
         let feature_info = feature_info(&project_id, &engine_version);
