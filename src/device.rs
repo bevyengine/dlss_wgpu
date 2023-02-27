@@ -3,12 +3,11 @@ use crate::nvsdk_ngx::{
     check_ngx_result, DlssError, NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements,
     RequestDeviceError,
 };
-use ash::vk::{
-    DeviceCreateInfo, DeviceQueueCreateInfo, ExtensionProperties, Instance, PhysicalDevice,
-};
+use ash::vk::{DeviceCreateInfo, DeviceQueueCreateInfo, Instance, PhysicalDevice};
 use std::ffi::CStr;
 use std::path::Path;
 use std::ptr;
+use std::slice;
 use uuid::Uuid;
 use wgpu::{Adapter, Device, DeviceDescriptor, Queue};
 use wgpu_core::api::Vulkan;
@@ -27,13 +26,11 @@ pub fn request_device(
                 let vk_physical_device = adapter.raw_physical_device();
 
                 let mut extensions = adapter.required_device_extensions(device_descriptor.features);
-                let dlss_device_extensions =
-                    dlss_device_extensions(project_id, vk_instance.handle(), vk_physical_device)?;
-                extensions.extend(
-                    dlss_device_extensions
-                        .iter()
-                        .map(|extension| CStr::from_ptr(extension.extension_name.as_ptr())),
-                );
+                extensions.extend(dlss_device_extensions(
+                    project_id,
+                    vk_instance.handle(),
+                    vk_physical_device,
+                )?);
                 let extension_pointers = extensions.iter().map(|&s| s.as_ptr()).collect::<Vec<_>>();
 
                 let queue_family_index = 0;
@@ -78,8 +75,9 @@ fn dlss_device_extensions(
     project_id: Uuid,
     vk_instance: Instance,
     vk_physical_device: PhysicalDevice,
-) -> Result<Box<[ExtensionProperties]>, DlssError> {
+) -> Result<impl Iterator<Item = &'static CStr>, DlssError> {
     with_feature_info(project_id, |feature_info| unsafe {
+        let mut dlss_device_extensions = ptr::null_mut();
         let mut dlss_device_extension_count = 0;
 
         check_ngx_result(NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(
@@ -87,18 +85,16 @@ fn dlss_device_extensions(
             vk_physical_device,
             feature_info,
             &mut dlss_device_extension_count,
-            ptr::null_mut(),
+            &mut dlss_device_extensions,
         ))?;
 
-        let mut dlss_device_exentions = Vec::with_capacity(dlss_device_extension_count as usize);
-        check_ngx_result(NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(
-            vk_instance,
-            vk_physical_device,
-            feature_info,
-            &mut dlss_device_extension_count,
-            &mut dlss_device_exentions.as_mut_ptr(),
-        ))?;
+        let dlss_device_extensions =
+            slice::from_raw_parts(dlss_device_extensions, dlss_device_extension_count as usize);
 
-        Ok(dlss_device_exentions.into_boxed_slice())
+        let dlss_device_extensions = dlss_device_extensions
+            .iter()
+            .map(|extension| CStr::from_ptr(extension.extension_name.as_ptr()));
+
+        Ok(dlss_device_extensions)
     })
 }
