@@ -1,4 +1,4 @@
-use crate::feature_info::FeatureInfo;
+use crate::feature_info::with_feature_info;
 use crate::nvsdk_ngx::*;
 use std::mem::MaybeUninit;
 use std::ops::Deref;
@@ -14,9 +14,7 @@ pub struct DlssSdk<D: Deref<Target = Device> + Clone> {
 
 impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
     pub fn dlss_available(project_id: Uuid, device: &D) -> Result<bool, DlssError> {
-        let feature_info = FeatureInfo::new(project_id);
-
-        unsafe {
+        with_feature_info(project_id, |feature_info| unsafe {
             device.as_hal::<Vulkan, _, _>(|device| {
                 let device = device.unwrap();
                 let vk_instance = device.shared_instance().raw_instance().handle();
@@ -26,7 +24,7 @@ impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
                 check_ngx_result(NVSDK_NGX_VULKAN_GetFeatureRequirements(
                     vk_instance,
                     vk_physical_device,
-                    &feature_info.as_nvsdk(),
+                    feature_info,
                     supported_features.as_mut_ptr(),
                 ))?;
                 let supported_features = supported_features.assume_init();
@@ -34,32 +32,32 @@ impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
                 Ok(supported_features.FeatureSupported
                     == NVSDK_NGX_Feature_Support_Result_NVSDK_NGX_FeatureSupportResult_Supported)
             })
-        }
+        })
     }
 
     pub fn new(project_id: Uuid, device: D) -> Result<Self, DlssError> {
-        let feature_info = FeatureInfo::new(project_id);
         let mut parameters = ptr::null_mut();
-
         unsafe {
             device.as_hal::<Vulkan, _, _>(|device| {
                 let device = device.unwrap();
                 let shared_instance = device.shared_instance();
                 let raw_instance = shared_instance.raw_instance();
 
-                check_ngx_result(NVSDK_NGX_VULKAN_Init_with_ProjectID(
-                    feature_info.project_id.as_ptr(),
-                    NVSDK_NGX_EngineType_NVSDK_NGX_ENGINE_TYPE_CUSTOM,
-                    feature_info.engine_version.as_ptr(),
-                    feature_info.data_path.as_ptr(),
-                    raw_instance.handle(),
-                    device.raw_physical_device(),
-                    device.raw_device().handle(),
-                    shared_instance.entry().static_fn().get_instance_proc_addr,
-                    raw_instance.fp_v1_0().get_device_proc_addr,
-                    &feature_info.feature_common_info.as_nvsdk(),
-                    NVSDK_NGX_Version_NVSDK_NGX_Version_API,
-                ))?;
+                with_feature_info(project_id, |feature_info| {
+                    check_ngx_result(NVSDK_NGX_VULKAN_Init_with_ProjectID(
+                        feature_info.Identifier.v.ProjectDesc.ProjectId,
+                        NVSDK_NGX_EngineType_NVSDK_NGX_ENGINE_TYPE_CUSTOM,
+                        feature_info.Identifier.v.ProjectDesc.EngineVersion,
+                        feature_info.ApplicationDataPath,
+                        raw_instance.handle(),
+                        device.raw_physical_device(),
+                        device.raw_device().handle(),
+                        shared_instance.entry().static_fn().get_instance_proc_addr,
+                        raw_instance.fp_v1_0().get_device_proc_addr,
+                        feature_info.FeatureInfo,
+                        NVSDK_NGX_Version_NVSDK_NGX_Version_API,
+                    ))
+                })?;
 
                 check_ngx_result(NVSDK_NGX_VULKAN_GetCapabilityParameters(&mut parameters))
             })?;
