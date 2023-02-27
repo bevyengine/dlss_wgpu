@@ -1,5 +1,6 @@
 mod context;
 mod device;
+mod feature_info;
 mod nvsdk_ngx;
 mod sdk;
 

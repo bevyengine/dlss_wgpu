@@ -1,9 +1,9 @@
+use crate::feature_info::FeatureInfo;
 use crate::nvsdk_ngx::{
     check_ngx_result, NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements, RequestDeviceError,
 };
-use crate::sdk::feature_info;
 use ash::vk::{DeviceCreateInfo, DeviceQueueCreateInfo};
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::path::Path;
 use std::ptr;
 use std::slice;
@@ -17,10 +17,6 @@ pub fn request_device(
     device_descriptor: &DeviceDescriptor,
     trace_path: Option<&Path>,
 ) -> Result<(Device, Queue), RequestDeviceError> {
-    let project_id = CString::new(project_id.to_string()).unwrap();
-    let engine_version = CString::new(env!("CARGO_PKG_VERSION")).unwrap();
-    let feature_info = feature_info(&project_id, &engine_version);
-
     unsafe {
         let open_device: Result<_, RequestDeviceError> =
             adapter.as_hal::<Vulkan, _, _>(|adapter| {
@@ -31,10 +27,11 @@ pub fn request_device(
                 let dlss_device_extensions = {
                     let mut dlss_device_extensions = ptr::null_mut();
                     let mut dlss_device_extension_count = 0;
+                    let feature_info = FeatureInfo::new(project_id);
                     check_ngx_result(NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(
                         vk_instance.handle(),
                         vk_physical_device,
-                        &feature_info,
+                        &feature_info.as_nvsdk(),
                         &mut dlss_device_extension_count,
                         &mut dlss_device_extensions,
                     ))?;

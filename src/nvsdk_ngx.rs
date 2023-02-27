@@ -123,19 +123,3 @@ pub fn check_ngx_result(result: NVSDK_NGX_Result) -> Result<(), DlssError> {
         _ => unreachable!(),
     }
 }
-
-#[cfg(target_os = "windows")]
-pub fn os_str_to_wchar(s: &OsStr) -> Vec<wchar_t> {
-    use std::os::windows::ffi::OsStrExt;
-
-    s.encode_wide().map(|c| c as wchar_t).collect()
-}
-
-#[cfg(not(target_os = "windows"))]
-pub fn os_str_to_wchar(s: &OsStr) -> Vec<wchar_t> {
-    s.to_str()
-        .unwrap_or("")
-        .chars()
-        .map(|c| c as wchar_t)
-        .collect()
-}
