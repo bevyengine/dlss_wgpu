@@ -128,6 +128,23 @@ impl<'a, D: Deref<Target = Device> + Clone> DlssContext<'a, D> {
     ) -> Result<(), DlssError> {
         // TODO: Validate render_parameters
 
+        let partial_texture_size = render_parameters
+            .partial_texture_size
+            .unwrap_or(self.max_render_resolution);
+
+        let (exposure, exposure_scale, pre_exposure) = match render_parameters.exposure {
+            DlssExposure::Manual {
+                exposure,
+                exposure_scale,
+                pre_exposure,
+            } => (
+                &mut dlss_resource(&exposure, adapter) as *mut _,
+                exposure_scale.unwrap_or(1.0),
+                pre_exposure.unwrap_or(0.0),
+            ),
+            DlssExposure::Automatic => (ptr::null_mut(), 0.0, 0.0),
+        };
+
         let mut dlss_eval_params = NVSDK_NGX_VK_DLSS_Eval_Params {
             Feature: NVSDK_NGX_VK_Feature_Eval_Params {
                 pInColor: &mut dlss_resource(&render_parameters.color, adapter),
@@ -138,21 +155,30 @@ impl<'a, D: Deref<Target = Device> + Clone> DlssContext<'a, D> {
             pInMotionVectors: &mut dlss_resource(&render_parameters.motion_vectors, adapter),
             InJitterOffsetX: render_parameters.jitter_offset.x,
             InJitterOffsetY: render_parameters.jitter_offset.y,
-            InRenderSubrectDimensions: todo!(),
+            InRenderSubrectDimensions: NVSDK_NGX_Dimensions {
+                Width: partial_texture_size.x,
+                Height: partial_texture_size.y,
+            },
             InReset: render_parameters.reset as _,
             InMVScaleX: render_parameters.motion_vector_scale.unwrap_or(Vec2::ONE).x,
             InMVScaleY: render_parameters.motion_vector_scale.unwrap_or(Vec2::ONE).y,
-            pInTransparencyMask: todo!(),
-            pInExposureTexture: todo!(),
-            pInBiasCurrentColorMask: todo!(),
+            pInTransparencyMask: match render_parameters.transparency_mask {
+                Some(transparency_mask) => &mut dlss_resource(&transparency_mask, adapter),
+                None => ptr::null_mut(),
+            },
+            pInExposureTexture: exposure,
+            pInBiasCurrentColorMask: match render_parameters.bias {
+                Some(bias) => &mut dlss_resource(&bias, adapter),
+                None => ptr::null_mut(),
+            },
             InColorSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InDepthSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InMVSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InTranslucencySubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InBiasCurrentColorSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InOutputSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
-            InPreExposure: todo!(),
-            InExposureScale: todo!(),
+            InPreExposure: pre_exposure,
+            InExposureScale: exposure_scale,
             InIndicatorInvertXAxis: 0,
             InIndicatorInvertYAxis: 0,
             GBufferSurface: NVSDK_NGX_VK_GBuffer {
