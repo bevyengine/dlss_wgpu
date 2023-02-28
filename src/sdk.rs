@@ -1,6 +1,5 @@
 use crate::feature_info::with_feature_info;
 use crate::nvsdk_ngx::*;
-use std::mem::MaybeUninit;
 use std::ops::Deref;
 use std::ptr;
 use uuid::Uuid;
@@ -13,28 +12,6 @@ pub struct DlssSdk<D: Deref<Target = Device> + Clone> {
 }
 
 impl<D: Deref<Target = Device> + Clone> DlssSdk<D> {
-    pub fn dlss_available(project_id: Uuid, device: &D) -> Result<bool, DlssError> {
-        with_feature_info(project_id, |feature_info| unsafe {
-            device.as_hal::<Vulkan, _, _>(|device| {
-                let device = device.unwrap();
-                let vk_instance = device.shared_instance().raw_instance().handle();
-                let vk_physical_device = device.raw_physical_device();
-
-                let mut supported_features = MaybeUninit::uninit();
-                check_ngx_result(NVSDK_NGX_VULKAN_GetFeatureRequirements(
-                    vk_instance,
-                    vk_physical_device,
-                    feature_info,
-                    supported_features.as_mut_ptr(),
-                ))?;
-                let supported_features = supported_features.assume_init();
-
-                Ok(supported_features.FeatureSupported
-                    == NVSDK_NGX_Feature_Support_Result_NVSDK_NGX_FeatureSupportResult_Supported)
-            })
-        })
-    }
-
     pub fn new(project_id: Uuid, device: D) -> Result<Self, DlssError> {
         let mut parameters = ptr::null_mut();
         unsafe {
