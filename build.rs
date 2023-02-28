@@ -10,25 +10,23 @@ fn main() {
     let vulkan_sdk = env::var("VULKAN_SDK").expect("VULKAN_SDK environment variable not set");
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-    // Set DLSS static library search path
-    #[cfg(not(target_os = "windows"))]
-    println!("cargo:rustc-link-search=native={dlss_sdk}/lib/Linux_x86_64");
-    #[cfg(target_os = "windows")]
-    println!("cargo:rustc-link-search=native={dlss_sdk}/lib/Windows_x86_64/x86_64");
-
     // Link to needed libraries
     #[cfg(not(target_os = "windows"))]
     {
-        println!("cargo:rustc-link-lib=static=nvsdk_ngx");
+        println!("cargo:rustc-link-search=native={dlss_sdk}/lib/Linux_x86_64");
         println!("cargo:rustc-link-search=native={vulkan_sdk}/lib");
+
+        println!("cargo:rustc-link-lib=static=nvsdk_ngx");
         println!("cargo:rustc-link-lib=dylib=vulkan");
         println!("cargo:rustc-link-lib=dylib=stdc++");
         println!("cargo:rustc-link-lib=dylib=dl");
     }
     #[cfg(target_os = "windows")]
     {
-        println!("cargo:rustc-link-lib=static=nvsdk_ngx_d");
+        println!("cargo:rustc-link-search=native={dlss_sdk}/lib/Windows_x86_64/x86_64");
         println!("cargo:rustc-link-search=native={vulkan_sdk}/Lib");
+
+        println!("cargo:rustc-link-lib=static=nvsdk_ngx_d");
         println!("cargo:rustc-link-lib=dylib=vulkan-1");
     }
 
