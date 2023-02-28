@@ -18,6 +18,7 @@ type VkImageView = ash::vk::ImageView;
 type VkInstance = ash::vk::Instance;
 type VkPhysicalDevice = ash::vk::PhysicalDevice;
 
+use glam::{UVec2, Vec2};
 use std::ffi::OsStr;
 use wgpu::{ImageSubresourceRange, Texture, TextureUsages, TextureView};
 
@@ -44,7 +45,29 @@ bitflags::bitflags! {
     }
 }
 
-pub struct DlssRenderParameters {}
+pub struct DlssRenderParameters<'a> {
+    pub color: DlssTexture<'a>,
+    pub depth: DlssTexture<'a>,
+    pub motion_vectors: DlssTexture<'a>,
+    pub exposure: DlssExposure,
+    pub transparency_mask: Option<DlssTexture<'a>>,
+    pub bias: Option<DlssTexture<'a>>,
+    pub dlss_output: DlssTexture<'a>,
+
+    pub reset: bool,
+    pub jitter_offset: Vec2,
+    pub partial_texture_size: Option<UVec2>,
+    pub motion_vector_scale: Option<Vec2>,
+}
+
+pub enum DlssExposure<'a> {
+    Manual {
+        exposure: DlssTexture<'a>,
+        exposure_scale: Option<f32>,
+        pre_exposure: Option<f32>,
+    },
+    Automatic,
+}
 
 pub struct DlssTexture<'a> {
     pub texture: &'a Texture,

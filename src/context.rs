@@ -1,6 +1,6 @@
 use crate::nvsdk_ngx::*;
 use crate::DlssSdk;
-use glam::UVec2;
+use glam::{UVec2, Vec2};
 use std::ops::Deref;
 use std::ptr;
 use wgpu::{Adapter, CommandEncoder, Device, TextureUsages};
@@ -124,44 +124,49 @@ impl<'a, D: Deref<Target = Device> + Clone> DlssContext<'a, D> {
         &mut self,
         render_parameters: DlssRenderParameters,
         command_encoder: &mut CommandEncoder,
+        adapter: &Adapter,
     ) -> Result<(), DlssError> {
+        // TODO: Validate render_parameters
+
         let mut dlss_eval_params = NVSDK_NGX_VK_DLSS_Eval_Params {
             Feature: NVSDK_NGX_VK_Feature_Eval_Params {
-                pInColor: todo!(),
-                pInOutput: todo!(),
-                InSharpness: todo!(),
+                pInColor: &mut dlss_resource(&render_parameters.color, adapter),
+                pInOutput: &mut dlss_resource(&render_parameters.dlss_output, adapter),
+                InSharpness: 0.0,
             },
-            pInDepth: todo!(),
-            pInMotionVectors: todo!(),
-            InJitterOffsetX: todo!(),
-            InJitterOffsetY: todo!(),
+            pInDepth: &mut dlss_resource(&render_parameters.depth, adapter),
+            pInMotionVectors: &mut dlss_resource(&render_parameters.motion_vectors, adapter),
+            InJitterOffsetX: render_parameters.jitter_offset.x,
+            InJitterOffsetY: render_parameters.jitter_offset.y,
             InRenderSubrectDimensions: todo!(),
-            InReset: todo!(),
-            InMVScaleX: todo!(),
-            InMVScaleY: todo!(),
+            InReset: render_parameters.reset as _,
+            InMVScaleX: render_parameters.motion_vector_scale.unwrap_or(Vec2::ONE).x,
+            InMVScaleY: render_parameters.motion_vector_scale.unwrap_or(Vec2::ONE).y,
             pInTransparencyMask: todo!(),
             pInExposureTexture: todo!(),
             pInBiasCurrentColorMask: todo!(),
-            InColorSubrectBase: todo!(),
-            InDepthSubrectBase: todo!(),
-            InMVSubrectBase: todo!(),
-            InTranslucencySubrectBase: todo!(),
-            InBiasCurrentColorSubrectBase: todo!(),
-            InOutputSubrectBase: todo!(),
+            InColorSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
+            InDepthSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
+            InMVSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
+            InTranslucencySubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
+            InBiasCurrentColorSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
+            InOutputSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InPreExposure: todo!(),
             InExposureScale: todo!(),
-            InIndicatorInvertXAxis: todo!(),
-            InIndicatorInvertYAxis: todo!(),
-            GBufferSurface: todo!(),
-            InToneMapperType: todo!(),
-            pInMotionVectors3D: todo!(),
-            pInIsParticleMask: todo!(),
-            pInAnimatedTextureMask: todo!(),
-            pInDepthHighRes: todo!(),
-            pInPositionViewSpace: todo!(),
-            InFrameTimeDeltaInMsec: todo!(),
-            pInRayTracingHitDistance: todo!(),
-            pInMotionVectorsReflections: todo!(),
+            InIndicatorInvertXAxis: 0,
+            InIndicatorInvertYAxis: 0,
+            GBufferSurface: NVSDK_NGX_VK_GBuffer {
+                pInAttrib: [ptr::null_mut(); 16],
+            },
+            InToneMapperType: NVSDK_NGX_ToneMapperType_NVSDK_NGX_TONEMAPPER_STRING,
+            pInMotionVectors3D: ptr::null_mut(),
+            pInIsParticleMask: ptr::null_mut(),
+            pInAnimatedTextureMask: ptr::null_mut(),
+            pInDepthHighRes: ptr::null_mut(),
+            pInPositionViewSpace: ptr::null_mut(),
+            InFrameTimeDeltaInMsec: 0.0,
+            pInRayTracingHitDistance: ptr::null_mut(),
+            pInMotionVectorsReflections: ptr::null_mut(),
         };
 
         unsafe {
