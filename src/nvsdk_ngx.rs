@@ -49,7 +49,7 @@ pub struct DlssRenderParameters<'a> {
     pub color: DlssTexture<'a>,
     pub depth: DlssTexture<'a>,
     pub motion_vectors: DlssTexture<'a>,
-    pub exposure: DlssExposure,
+    pub exposure: DlssExposure<'a>,
     pub transparency_mask: Option<DlssTexture<'a>>,
     pub bias: Option<DlssTexture<'a>>,
     pub dlss_output: DlssTexture<'a>,
