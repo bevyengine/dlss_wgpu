@@ -45,6 +45,7 @@ fn main() {
         .allowlist_function("NVSDK.*")
         .allowlist_var("NVSDK.*")
         .allowlist_type("NVSDK.*")
+        .blocklist_item("*.CUDA")
         .blocklist_type("Vk.*")
         .blocklist_type("PFN_vk.*")
         .wrap_static_fns(true)
