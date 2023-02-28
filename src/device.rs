@@ -1,8 +1,10 @@
 use crate::feature_info::with_feature_info;
-use crate::nvsdk_ngx::*;
+use crate::nvsdk_ngx::{
+    check_ngx_result, DlssError, DlssRequestDeviceError,
+    NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements,
+};
 use ash::vk::{DeviceCreateInfo, DeviceQueueCreateInfo, Instance, PhysicalDevice};
 use std::ffi::CStr;
-use std::mem::MaybeUninit;
 use std::path::Path;
 use std::ptr;
 use std::slice;
@@ -10,27 +12,7 @@ use uuid::Uuid;
 use wgpu::{Adapter, Device, DeviceDescriptor, Queue};
 use wgpu_core::api::Vulkan;
 
-pub fn dlss_available(project_id: Uuid, adapter: &Adapter) -> Result<bool, DlssError> {
-    with_feature_info(project_id, |feature_info| unsafe {
-        adapter.as_hal::<Vulkan, _, _>(|adapter| {
-            let adapter = adapter.unwrap();
-            let vk_instance = adapter.shared_instance().raw_instance().handle();
-            let vk_physical_device = adapter.raw_physical_device();
-
-            let mut supported_features = MaybeUninit::uninit();
-            check_ngx_result(NVSDK_NGX_VULKAN_GetFeatureRequirements(
-                vk_instance,
-                vk_physical_device,
-                feature_info,
-                supported_features.as_mut_ptr(),
-            ))?;
-            let supported_features = supported_features.assume_init();
-
-            Ok(supported_features.FeatureSupported
-                == NVSDK_NGX_Feature_Support_Result_NVSDK_NGX_FeatureSupportResult_Supported)
-        })
-    })
-}
+// TODO: Combine request_device() and DlssSdk::new()
 
 pub fn request_device(
     project_id: Uuid,
