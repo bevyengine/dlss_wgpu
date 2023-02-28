@@ -3,8 +3,9 @@ use crate::DlssSdk;
 use glam::UVec2;
 use std::ops::Deref;
 use std::ptr;
-use wgpu::{CommandEncoder, Device};
+use wgpu::{Adapter, CommandEncoder, Device, TextureUsages};
 use wgpu_core::api::Vulkan;
+use wgpu_hal::vulkan::conv::map_subresource_range;
 
 pub struct DlssContext<'a, D: Deref<Target = Device> + Clone> {
     upscaled_resolution: UVec2,
@@ -15,12 +16,12 @@ pub struct DlssContext<'a, D: Deref<Target = Device> + Clone> {
 }
 
 impl<'a, D: Deref<Target = Device> + Clone> DlssContext<'a, D> {
-    pub fn new<'f>(
+    pub fn new<'b>(
         upscaled_resolution: UVec2,
         preset: DlssPreset,
         mut feature_flags: DlssFeatureFlags,
         sdk: &'a mut DlssSdk<D>,
-        command_encoder: &'f mut CommandEncoder,
+        command_encoder: &'b mut CommandEncoder,
     ) -> Result<Self, DlssError> {
         let enable_output_subrects = feature_flags.contains(DlssFeatureFlags::PartialTextureInputs);
         feature_flags.remove(DlssFeatureFlags::PartialTextureInputs);
@@ -119,8 +120,60 @@ impl<'a, D: Deref<Target = Device> + Clone> DlssContext<'a, D> {
         }
     }
 
-    pub fn render(&mut self) {
-        todo!()
+    pub fn render(
+        &mut self,
+        render_parameters: DlssRenderParameters,
+        command_encoder: &mut CommandEncoder,
+    ) -> Result<(), DlssError> {
+        let mut dlss_eval_params = NVSDK_NGX_VK_DLSS_Eval_Params {
+            Feature: NVSDK_NGX_VK_Feature_Eval_Params {
+                pInColor: todo!(),
+                pInOutput: todo!(),
+                InSharpness: todo!(),
+            },
+            pInDepth: todo!(),
+            pInMotionVectors: todo!(),
+            InJitterOffsetX: todo!(),
+            InJitterOffsetY: todo!(),
+            InRenderSubrectDimensions: todo!(),
+            InReset: todo!(),
+            InMVScaleX: todo!(),
+            InMVScaleY: todo!(),
+            pInTransparencyMask: todo!(),
+            pInExposureTexture: todo!(),
+            pInBiasCurrentColorMask: todo!(),
+            InColorSubrectBase: todo!(),
+            InDepthSubrectBase: todo!(),
+            InMVSubrectBase: todo!(),
+            InTranslucencySubrectBase: todo!(),
+            InBiasCurrentColorSubrectBase: todo!(),
+            InOutputSubrectBase: todo!(),
+            InPreExposure: todo!(),
+            InExposureScale: todo!(),
+            InIndicatorInvertXAxis: todo!(),
+            InIndicatorInvertYAxis: todo!(),
+            GBufferSurface: todo!(),
+            InToneMapperType: todo!(),
+            pInMotionVectors3D: todo!(),
+            pInIsParticleMask: todo!(),
+            pInAnimatedTextureMask: todo!(),
+            pInDepthHighRes: todo!(),
+            pInPositionViewSpace: todo!(),
+            InFrameTimeDeltaInMsec: todo!(),
+            pInRayTracingHitDistance: todo!(),
+            pInMotionVectorsReflections: todo!(),
+        };
+
+        unsafe {
+            command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
+                check_ngx_result(NGX_VULKAN_EVALUATE_DLSS_EXT(
+                    command_encoder.unwrap().raw_handle(),
+                    self.feature,
+                    self.sdk.parameters,
+                    &mut dlss_eval_params,
+                ))
+            })
+        }
     }
 
     pub fn upscaled_resolution(&self) -> UVec2 {
@@ -150,5 +203,25 @@ impl<D: Deref<Target = Device> + Clone> Drop for DlssContext<'_, D> {
                     .expect("Failed to destroy DlssContext feature");
             });
         }
+    }
+}
+
+fn dlss_resource(texture: &DlssTexture, adapter: &Adapter) -> NVSDK_NGX_Resource_VK {
+    unsafe {
+        NVSDK_NGX_Create_ImageView_Resource_VK(
+            texture
+                .view
+                .as_hal::<Vulkan, _, _>(|v| v.unwrap().raw_handle()),
+            texture
+                .texture
+                .as_hal::<Vulkan, _, _>(|t| t.unwrap().raw_handle()),
+            map_subresource_range(&texture.subresource_range, texture.texture.format()),
+            adapter
+                .texture_format_as_hal::<Vulkan>(texture.texture.format())
+                .unwrap(),
+            texture.texture.width(),
+            texture.texture.height(),
+            texture.usages == TextureUsages::STORAGE_BINDING,
+        )
     }
 }

@@ -19,6 +19,7 @@ type VkInstance = ash::vk::Instance;
 type VkPhysicalDevice = ash::vk::PhysicalDevice;
 
 use std::ffi::OsStr;
+use wgpu::{ImageSubresourceRange, Texture, TextureUsages, TextureView};
 
 #[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
 pub enum DlssPreset {
@@ -43,8 +44,17 @@ bitflags::bitflags! {
     }
 }
 
+pub struct DlssRenderParameters {}
+
+pub struct DlssTexture<'a> {
+    pub texture: &'a Texture,
+    pub view: &'a TextureView,
+    pub subresource_range: ImageSubresourceRange,
+    pub usages: TextureUsages,
+}
+
 #[derive(thiserror::Error, Debug)]
-pub enum RequestDeviceError {
+pub enum DlssRequestDeviceError {
     #[error(transparent)]
     WgpuRequestDeviceError(#[from] wgpu::RequestDeviceError),
     #[error(transparent)]

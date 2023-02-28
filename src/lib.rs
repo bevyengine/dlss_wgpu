@@ -6,5 +6,8 @@ mod sdk;
 
 pub use context::DlssContext;
 pub use device::request_device;
-pub use nvsdk_ngx::{DlssError, DlssFeatureFlags, DlssPreset, RequestDeviceError};
+pub use nvsdk_ngx::{
+    DlssError, DlssFeatureFlags, DlssPreset, DlssRenderParameters, DlssRequestDeviceError,
+    DlssTexture,
+};
 pub use sdk::DlssSdk;

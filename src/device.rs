@@ -1,7 +1,7 @@
 use crate::feature_info::with_feature_info;
 use crate::nvsdk_ngx::{
-    check_ngx_result, DlssError, NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements,
-    RequestDeviceError,
+    check_ngx_result, DlssError, DlssRequestDeviceError,
+    NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements,
 };
 use ash::vk::{DeviceCreateInfo, DeviceQueueCreateInfo, Instance, PhysicalDevice};
 use std::ffi::CStr;
@@ -17,9 +17,9 @@ pub fn request_device(
     adapter: &Adapter,
     device_descriptor: &DeviceDescriptor,
     trace_path: Option<&Path>,
-) -> Result<(Device, Queue), RequestDeviceError> {
+) -> Result<(Device, Queue), DlssRequestDeviceError> {
     unsafe {
-        let open_device: Result<_, RequestDeviceError> =
+        let open_device: Result<_, DlssRequestDeviceError> =
             adapter.as_hal::<Vulkan, _, _>(|adapter| {
                 let adapter = adapter.unwrap();
                 let vk_instance = adapter.shared_instance().raw_instance();
