@@ -3,25 +3,26 @@ use crate::DlssSdk;
 use glam::{UVec2, Vec2};
 use std::ops::Deref;
 use std::ptr;
+use std::rc::Rc;
 use wgpu::{Adapter, CommandEncoder, Device, TextureUsages};
 use wgpu_core::api::Vulkan;
 use wgpu_hal::vulkan::conv::map_subresource_range;
 
-pub struct DlssContext<'a, D: Deref<Target = Device> + Clone> {
+pub struct DlssContext<D: Deref<Target = Device>> {
     upscaled_resolution: UVec2,
     min_render_resolution: UVec2,
     max_render_resolution: UVec2,
-    sdk: &'a DlssSdk<D>,
+    sdk: Rc<DlssSdk<D>>,
     feature: *mut NVSDK_NGX_Handle,
 }
 
-impl<'a, D: Deref<Target = Device> + Clone> DlssContext<'a, D> {
-    pub fn new<'b>(
+impl<D: Deref<Target = Device>> DlssContext<D> {
+    pub fn new(
         upscaled_resolution: UVec2,
         preset: DlssPreset,
         mut feature_flags: DlssFeatureFlags,
-        sdk: &'a mut DlssSdk<D>,
-        command_encoder: &'b mut CommandEncoder,
+        sdk: Rc<DlssSdk<D>>,
+        command_encoder: &mut CommandEncoder,
     ) -> Result<Self, DlssError> {
         let enable_output_subrects = feature_flags.contains(DlssFeatureFlags::PartialTextureInputs);
         feature_flags.remove(DlssFeatureFlags::PartialTextureInputs);
@@ -220,7 +221,7 @@ impl<'a, D: Deref<Target = Device> + Clone> DlssContext<'a, D> {
     }
 }
 
-impl<D: Deref<Target = Device> + Clone> Drop for DlssContext<'_, D> {
+impl<D: Deref<Target = Device>> Drop for DlssContext<D> {
     fn drop(&mut self) {
         unsafe {
             self.sdk.device.as_hal::<Vulkan, _, _>(|device| {
