@@ -21,9 +21,11 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
         upscaled_resolution: UVec2,
         preset: DlssPreset,
         mut feature_flags: DlssFeatureFlags,
-        sdk: Rc<DlssSdk<D>>,
+        sdk: &Rc<DlssSdk<D>>,
         command_encoder: &mut CommandEncoder,
     ) -> Result<Self, DlssError> {
+        let sdk = Rc::clone(sdk);
+
         let enable_output_subrects = feature_flags.contains(DlssFeatureFlags::PartialTextureInputs);
         feature_flags.remove(DlssFeatureFlags::PartialTextureInputs);
 
