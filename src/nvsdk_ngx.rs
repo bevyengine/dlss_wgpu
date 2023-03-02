@@ -22,7 +22,7 @@ use glam::{UVec2, Vec2};
 use std::ffi::OsStr;
 use wgpu::{ImageSubresourceRange, Texture, TextureUsages, TextureView};
 
-#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Debug)]
 pub enum DlssPreset {
     #[default]
     Auto,
