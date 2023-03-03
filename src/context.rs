@@ -210,9 +210,9 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
         }
     }
 
-    pub fn suggested_jitter(&self, frame_count: usize, render_resolution: UVec2) -> Vec2 {
+    pub fn suggested_jitter(&self, frame_count: u32, render_resolution: UVec2) -> Vec2 {
         let ratio = self.upscaled_resolution.x as f32 / render_resolution.x as f32;
-        let phase_count = (8.0 * ratio * ratio) as usize;
+        let phase_count = (8.0 * ratio * ratio) as u32;
         let i = (frame_count % phase_count) + 1;
 
         Vec2 {
@@ -271,13 +271,13 @@ fn dlss_resource(texture: &DlssTexture, adapter: &Adapter) -> NVSDK_NGX_Resource
     }
 }
 
-fn halton_sequence(mut index: usize, base: usize) -> f32 {
+fn halton_sequence(mut index: u32, base: u32) -> f32 {
     let mut f = 1.0;
     let mut result = 0.0;
     while index > 0 {
         f /= base as f32;
         result += f * (index % base) as f32;
-        index = (index as f32 / base as f32).floor() as usize;
+        index = (index as f32 / base as f32).floor() as u32;
     }
     result
 }
