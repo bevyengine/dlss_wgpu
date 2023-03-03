@@ -1,7 +1,7 @@
 use crate::nvsdk_ngx::*;
 use crate::DlssSdk;
 use glam::{UVec2, Vec2};
-use std::ops::Deref;
+use std::ops::{Deref, RangeInclusive};
 use std::ptr;
 use std::rc::Rc;
 use wgpu::{Adapter, CommandEncoder, Device, TextureUsages};
@@ -225,12 +225,12 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
         self.upscaled_resolution
     }
 
-    pub fn min_render_resolution(&self) -> UVec2 {
+    pub fn render_resolution(&self) -> UVec2 {
         self.min_render_resolution
     }
 
-    pub fn max_render_resolution(&self) -> UVec2 {
-        self.max_render_resolution
+    pub fn render_resolution_range(&self) -> RangeInclusive<UVec2> {
+        self.min_render_resolution..=self.max_render_resolution
     }
 }
 
