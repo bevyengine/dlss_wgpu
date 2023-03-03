@@ -266,7 +266,7 @@ fn dlss_resource(texture: &DlssTexture, adapter: &Adapter) -> NVSDK_NGX_Resource
                 .unwrap(),
             texture.texture.width(),
             texture.texture.height(),
-            texture.usages == TextureUsages::STORAGE_BINDING,
+            texture.usages.contains(TextureUsages::STORAGE_BINDING),
         )
     }
 }

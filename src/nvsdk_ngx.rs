@@ -45,6 +45,7 @@ bitflags::bitflags! {
     }
 }
 
+// TODO: Allow configuring partial texture origins
 pub struct DlssRenderParameters<'a> {
     pub color: DlssTexture<'a>,
     pub depth: DlssTexture<'a>,
