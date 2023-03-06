@@ -198,7 +198,8 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
             pInMotionVectorsReflections: ptr::null_mut(),
         };
 
-        unsafe {
+        command_encoder.push_debug_group("dlss");
+        let result = unsafe {
             command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
                 check_ngx_result(NGX_VULKAN_EVALUATE_DLSS_EXT(
                     command_encoder.unwrap().raw_handle(),
@@ -207,7 +208,9 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
                     &mut dlss_eval_params,
                 ))
             })
-        }
+        };
+        command_encoder.pop_debug_group();
+        result
     }
 
     pub fn suggested_jitter(&self, frame_count: u32, render_resolution: UVec2) -> Vec2 {
