@@ -51,8 +51,16 @@ pub fn request_device(
                             .queue_create_infos(&[queue_family_info])
                             .enabled_extension_names(&extension_pointers)
                             // TODO: Varies per gpu/driver?
-                            .push_next(&mut PhysicalDeviceBufferDeviceAddressFeaturesEXT::default())
-                            .push_next(&mut PhysicalDeviceHostQueryResetFeaturesEXT::default()),
+                            .push_next(
+                                &mut PhysicalDeviceBufferDeviceAddressFeaturesEXT::builder()
+                                    .buffer_device_address(true)
+                                    .build(),
+                            )
+                            .push_next(
+                                &mut PhysicalDeviceHostQueryResetFeaturesEXT::builder()
+                                    .host_query_reset(true)
+                                    .build(),
+                            ),
                     )
                     .build();
 
