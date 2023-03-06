@@ -3,7 +3,10 @@ use crate::nvsdk_ngx::{
     check_ngx_result, DlssError, DlssRequestDeviceError,
     NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements,
 };
-use ash::vk::{DeviceCreateInfo, DeviceQueueCreateInfo, Instance, PhysicalDevice};
+use ash::vk::{
+    DeviceCreateInfo, DeviceQueueCreateInfo, Instance, PhysicalDevice,
+    PhysicalDeviceBufferDeviceAddressFeaturesEXT, PhysicalDeviceHostQueryResetFeaturesEXT,
+};
 use std::ffi::CStr;
 use std::path::Path;
 use std::ptr;
@@ -46,7 +49,10 @@ pub fn request_device(
                     .add_to_device_create_builder(
                         DeviceCreateInfo::builder()
                             .queue_create_infos(&[queue_family_info])
-                            .enabled_extension_names(&extension_pointers),
+                            .enabled_extension_names(&extension_pointers)
+                            // TODO: Varies per gpu/driver?
+                            .push_next(&mut PhysicalDeviceBufferDeviceAddressFeaturesEXT::default())
+                            .push_next(&mut PhysicalDeviceHostQueryResetFeaturesEXT::default()),
                     )
                     .build();
 
