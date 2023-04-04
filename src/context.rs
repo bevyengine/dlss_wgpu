@@ -224,6 +224,10 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
         } - 0.5
     }
 
+    pub fn suggested_mip_bias(&self, render_resolution: UVec2) -> f32 {
+        (render_resolution.x as f32 / self.upscaled_resolution.x as f32).log2() - 1.0
+    }
+
     pub fn upscaled_resolution(&self) -> UVec2 {
         self.upscaled_resolution
     }
