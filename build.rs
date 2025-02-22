@@ -35,24 +35,17 @@ fn main() {
     let vulkan_sdk_include = "Include";
     Builder::default()
         .header("src/wrapper.h")
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .wrap_static_fns(true)
         .clang_arg(format!("-I{dlss_sdk}/include"))
         .clang_arg(format!("-I{vulkan_sdk}/{vulkan_sdk_include}"))
-        .allowlist_function("NGX.*")
-        .allowlist_function("NVSDK.*")
-        .allowlist_type("NVSDK.*")
-        .allowlist_var("NVSDK.*")
-        .blocklist_function("NGX_CUDA.*")
-        .blocklist_function("NVSDK_NGX_CUDA.*")
-        .blocklist_type("NVSDK_NGX_CUDA.*")
-        .blocklist_type("Vk.*")
-        .blocklist_type("PFN_vk.*")
-        .wrap_static_fns(true)
+        .allowlist_item(".*NGX.*")
         .generate()
         .unwrap()
         .write_to_file(out_dir.join("bindings.rs"))
         .unwrap();
 
-    // Generate and link static library for static inline functions
+    // Generate and link a static library for static inline functions
     link_static_fns(out_dir, &dlss_sdk, &vulkan_sdk, vulkan_sdk_include);
 }
 
@@ -87,10 +80,10 @@ fn link_static_fns(out_dir: PathBuf, dlss_sdk: &str, vulkan_sdk: &str, vulkan_sd
         .output()
         .expect("Failed to run ar");
     #[cfg(target_os = "windows")]
-    let lib_output = Command::new("lib")
+    let lib_output = Command::new("llvm-lib")
         .arg(&obj_path)
         .output()
-        .expect("Failed to run lib.exe");
+        .expect("Failed to run llvm-lib");
 
     if !lib_output.status.success() {
         panic!(
