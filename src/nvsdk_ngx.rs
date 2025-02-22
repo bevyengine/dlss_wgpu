@@ -82,7 +82,7 @@ pub enum DlssRequestDeviceError {
     #[error(transparent)]
     WgpuRequestDeviceError(#[from] wgpu::RequestDeviceError),
     #[error(transparent)]
-    DeviceError(#[from] wgpu_hal::DeviceError),
+    DeviceError(#[from] wgpu::hal::DeviceError),
     #[error(transparent)]
     VulkanError(#[from] ash::vk::Result),
     #[error(transparent)]

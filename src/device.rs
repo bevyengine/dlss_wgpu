@@ -12,8 +12,8 @@ use std::path::Path;
 use std::ptr;
 use std::slice;
 use uuid::Uuid;
+use wgpu::hal::api::Vulkan;
 use wgpu::{Adapter, Device, DeviceDescriptor, Queue};
-use wgpu_core::api::Vulkan;
 
 // TODO: Combine request_device() and DlssSdk::new()
 
@@ -30,7 +30,8 @@ pub fn request_device(
                 let vk_instance = adapter.shared_instance().raw_instance();
                 let vk_physical_device = adapter.raw_physical_device();
 
-                let mut extensions = adapter.required_device_extensions(device_descriptor.features);
+                let mut extensions =
+                    adapter.required_device_extensions(device_descriptor.required_features);
                 extensions.extend(dlss_device_extensions(
                     project_id,
                     vk_instance.handle(),
@@ -39,39 +40,36 @@ pub fn request_device(
                 let extension_pointers = extensions.iter().map(|&s| s.as_ptr()).collect::<Vec<_>>();
 
                 let queue_family_index = 0;
-                let queue_family_info = DeviceQueueCreateInfo::builder()
+                let queue_family_info = DeviceQueueCreateInfo::default()
                     .queue_family_index(queue_family_index)
-                    .queue_priorities(&[1.0])
-                    .build();
+                    .queue_priorities(&[1.0]);
 
                 let device_info = adapter
-                    .physical_device_features(&extensions, device_descriptor.features)
-                    .add_to_device_create_builder(
-                        DeviceCreateInfo::builder()
+                    .physical_device_features(&extensions, device_descriptor.required_features)
+                    .add_to_device_create(
+                        DeviceCreateInfo::default()
                             .queue_create_infos(&[queue_family_info])
                             .enabled_extension_names(&extension_pointers)
                             // TODO: Varies per gpu/driver?
                             .push_next(
-                                &mut PhysicalDeviceBufferDeviceAddressFeaturesEXT::builder()
-                                    .buffer_device_address(true)
-                                    .build(),
+                                &mut PhysicalDeviceBufferDeviceAddressFeaturesEXT::default()
+                                    .buffer_device_address(true),
                             )
                             .push_next(
-                                &mut PhysicalDeviceHostQueryResetFeaturesEXT::builder()
-                                    .host_query_reset(true)
-                                    .build(),
+                                &mut PhysicalDeviceHostQueryResetFeaturesEXT::default()
+                                    .host_query_reset(true),
                             ),
-                    )
-                    .build();
+                    );
 
                 let vk_device =
                     vk_instance.create_device(vk_physical_device, &device_info, None)?;
 
                 Ok(adapter.device_from_raw(
                     vk_device,
-                    true,
+                    None,
                     &extensions,
-                    device_descriptor.features,
+                    device_descriptor.required_features,
+                    &device_descriptor.memory_hints,
                     queue_family_index,
                     0,
                 )?)

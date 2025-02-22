@@ -4,9 +4,9 @@ use glam::{UVec2, Vec2};
 use std::ops::{Deref, RangeInclusive};
 use std::ptr;
 use std::rc::Rc;
+use wgpu::hal::api::Vulkan;
+use wgpu::hal::vulkan::conv::map_subresource_range;
 use wgpu::{Adapter, CommandEncoder, Device, TextureUsages};
-use wgpu_core::api::Vulkan;
-use wgpu_hal::vulkan::conv::map_subresource_range;
 
 pub struct DlssContext<D: Deref<Target = Device>> {
     upscaled_resolution: UVec2,

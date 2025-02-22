@@ -4,8 +4,8 @@ use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
 use uuid::Uuid;
+use wgpu::hal::api::Vulkan;
 use wgpu::Device;
-use wgpu_core::api::Vulkan;
 
 pub struct DlssSdk<D: Deref<Target = Device>> {
     pub(crate) parameters: *mut NVSDK_NGX_Parameter,
