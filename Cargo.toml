@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "f781a6b6caeeaa76817e2811544939662b5bdf56" }
-wgpu-hal = { git = "https://github.com/gfx-rs/wgpu", rev = "f781a6b6caeeaa76817e2811544939662b5bdf56" }
+wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "ae5dc0e7cbb1b23db0815be57bf2550272dcf63f", default-features = false, features = [
+    "vulkan",
+] }
+wgpu-hal = { git = "https://github.com/gfx-rs/wgpu", rev = "ae5dc0e7cbb1b23db0815be57bf2550272dcf63f" }
 ash = "0.38"
 glam = "0.29"
 uuid = "1"
