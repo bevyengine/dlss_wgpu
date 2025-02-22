@@ -7,7 +7,6 @@ edition = "2021"
 wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "ae5dc0e7cbb1b23db0815be57bf2550272dcf63f", default-features = false, features = [
     "vulkan",
 ] }
-wgpu-hal = { git = "https://github.com/gfx-rs/wgpu", rev = "ae5dc0e7cbb1b23db0815be57bf2550272dcf63f" }
 ash = "0.38"
 glam = "0.29"
 uuid = "1"
