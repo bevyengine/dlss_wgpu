@@ -4,14 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-wgpu = { git = "https://github.com/jms55/wgpu" }
-wgpu-core = { git = "https://github.com/jms55/wgpu" }
-wgpu-hal = { git = "https://github.com/jms55/wgpu" }
-ash = "0.37"
-glam = "0.23"
-uuid = "1.3"
-bitflags = "2.0"
-thiserror = "1.0"
+wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "f781a6b6caeeaa76817e2811544939662b5bdf56" }
+wgpu-hal = { git = "https://github.com/gfx-rs/wgpu", rev = "f781a6b6caeeaa76817e2811544939662b5bdf56" }
+ash = "0.38"
+glam = "0.29"
+uuid = "1"
+bitflags = "2"
+thiserror = "1"
 
 [build-dependencies]
-bindgen = { version = "0.64", features = ["experimental"] }
+bindgen = "0.71"

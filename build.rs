@@ -1,7 +1,5 @@
 use bindgen::Builder;
-use std::env;
-use std::path::PathBuf;
-use std::process::Command;
+use std::{env, path::PathBuf, process::Command};
 
 fn main() {
     // Get SDK paths
@@ -23,7 +21,7 @@ fn main() {
     }
     #[cfg(target_os = "windows")]
     {
-        println!("cargo:rustc-link-search=native={dlss_sdk}/lib/Windows_x86_64/x86_64");
+        println!("cargo:rustc-link-search=native={dlss_sdk}/lib/Windows_x86_64/x64");
         println!("cargo:rustc-link-search=native={vulkan_sdk}/Lib");
 
         println!("cargo:rustc-link-lib=static=nvsdk_ngx_d");
@@ -54,7 +52,7 @@ fn main() {
         .write_to_file(out_dir.join("bindings.rs"))
         .unwrap();
 
-    // Generate static library for static inline functions
+    // Generate and link static library for static inline functions
     link_static_fns(out_dir, &dlss_sdk, &vulkan_sdk, vulkan_sdk_include);
 }
 

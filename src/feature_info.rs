@@ -21,7 +21,7 @@ where
     let profile = "dev";
     #[cfg(not(debug_assertions))]
     let profile = "rel";
-    let sdk_path = format!("{}/lib/{platform}/{profile}", env!("DLSS_SDK"));
+    let sdk_path = format!("{}/lib/{platform}/{profile}", env!("DLSS_SDK")); // TODO: option_env!
     let shared_library_paths = [
         os_str_to_wchar(&OsString::from(".")),
         os_str_to_wchar(&OsString::from(sdk_path)),
