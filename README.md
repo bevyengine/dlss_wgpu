@@ -7,8 +7,7 @@ The DLSS SDK cannot be redistributed by this crate. You will need to download th
 * Ensure you comply with the DLSS SDK license located at https://github.com/NVIDIA/DLSS/blob/main/LICENSE.txt
 
 ## Build Dependencies
-* On Windows, install `clang` (following https://rust-lang.github.io/rust-bindgen/requirements.html#windows)
-* On Linux, install `clang` and `ar`
+Install clang https://rust-lang.github.io/rust-bindgen/requirements.html#clang
 
 ## Distributing Your App
 * On Windows, copy `DLSS_SDK/lib/Windows_x86_64/rel/nvngx_dlss.dll` to the same directory as your app

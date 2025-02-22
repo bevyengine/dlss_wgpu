@@ -1,5 +1,4 @@
-use bindgen::Builder;
-use std::{env, path::PathBuf, process::Command};
+use std::{env, path::PathBuf};
 
 fn main() {
     // Get SDK paths
@@ -33,11 +32,11 @@ fn main() {
     let vulkan_sdk_include = "include";
     #[cfg(target_os = "windows")]
     let vulkan_sdk_include = "Include";
-    Builder::default()
-        .header("src/wrapper.h")
+    bindgen::Builder::default()
+        .header(format!("{}/src/wrapper.h", env!("CARGO_MANIFEST_DIR")))
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .wrap_static_fns(true)
-        .wrap_static_fns_path(out_dir.join("extern"))
+        .wrap_static_fns_path(out_dir.join("wrap_static_fns"))
         .clang_arg(format!("-I{dlss_sdk}/include"))
         .clang_arg(format!("-I{vulkan_sdk}/{vulkan_sdk_include}"))
         .allowlist_item(".*NGX.*")
@@ -46,56 +45,13 @@ fn main() {
         .write_to_file(out_dir.join("bindings.rs"))
         .unwrap();
 
-    // Generate and link a static library for static inline functions
-    link_static_fns(out_dir, &dlss_sdk, &vulkan_sdk, vulkan_sdk_include);
-}
-
-fn link_static_fns(out_dir: PathBuf, dlss_sdk: &str, vulkan_sdk: &str, vulkan_sdk_include: &str) {
-    let obj_path = out_dir.join("extern.o");
-
-    let clang_output = Command::new("clang")
-        .arg("-O")
-        .arg("-c")
-        .arg("-o")
-        .arg(&obj_path)
-        .arg(out_dir.join("extern.c"))
-        .arg("-include")
-        .arg("src/wrapper.h")
-        .arg(format!("-I{dlss_sdk}/include"))
-        .arg(format!("-I{vulkan_sdk}/{vulkan_sdk_include}"))
-        .output()
-        .expect("Failed to run clang");
-
-    if !clang_output.status.success() {
-        panic!(
-            "Could not compile object file:\n{}",
-            String::from_utf8_lossy(&clang_output.stderr)
-        );
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    let lib_output = Command::new("ar")
-        .arg("rcs")
-        .arg(out_dir.join("libextern.a"))
-        .arg(obj_path)
-        .output()
-        .expect("Failed to run ar");
-    #[cfg(target_os = "windows")]
-    let lib_output = Command::new("llvm-lib")
-        .arg(&obj_path)
-        .output()
-        .expect("Failed to run llvm-lib");
-
-    if !lib_output.status.success() {
-        panic!(
-            "Could not emit library file:\n{}",
-            String::from_utf8_lossy(&lib_output.stderr)
-        );
-    }
-
-    println!(
-        "cargo:rustc-link-search=native={}",
-        out_dir.to_string_lossy()
-    );
-    println!("cargo:rustc-link-lib=static=extern");
+    // Generate and link a library for static inline functions
+    cc::Build::new()
+        .file(out_dir.join("wrap_static_fns.c"))
+        .includes([
+            format!("{}/src/wrapper.h", env!("CARGO_MANIFEST_DIR")),
+            format!("{dlss_sdk}/include"),
+            format!("{vulkan_sdk}/{vulkan_sdk_include}"),
+        ])
+        .compile("wrap_static_fns");
 }
