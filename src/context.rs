@@ -1,6 +1,7 @@
 use crate::nvsdk_ngx::*;
 use crate::DlssSdk;
 use glam::{UVec2, Vec2};
+use std::iter;
 use std::ops::{Deref, RangeInclusive};
 use std::ptr;
 use std::rc::Rc;
@@ -199,6 +200,7 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
         };
 
         command_encoder.push_debug_group("dlss");
+        command_encoder.transition_resources(iter::empty(), [todo!()]);
         let result = unsafe {
             command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
                 check_ngx_result(NGX_VULKAN_EVALUATE_DLSS_EXT(
@@ -209,6 +211,7 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
                 ))
             })
         };
+        command_encoder.transition_resources(iter::empty(), [todo!()]);
         command_encoder.pop_debug_group();
         result
     }
