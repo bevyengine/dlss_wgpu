@@ -40,6 +40,8 @@ fn main() {
         .clang_arg(format!("-I{dlss_sdk}/include"))
         .clang_arg(format!("-I{vulkan_sdk}/{vulkan_sdk_include}"))
         .allowlist_item(".*NGX.*")
+        .blocklist_type("Vk.*")
+        .blocklist_type("PFN_vk.*")
         .generate()
         .unwrap()
         .write_to_file(out_dir.join("bindings.rs"))
