@@ -71,6 +71,7 @@ impl DlssPreset {
 
 /// TODO: Docs
 bitflags::bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct DlssFeatureFlags: NVSDK_NGX_DLSS_Feature_Flags {
         const HighDynamicRange = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
         const LowResolutionMotionVectors = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
@@ -79,6 +80,14 @@ bitflags::bitflags! {
         const AutoExposure = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
         const AlphaUpscaling = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AlphaUpscaling;
         const PartialTextureInputs = 256; // Not part of NVSDK_NGX_DLSS_Feature_Flags
+    }
+}
+
+impl DlssFeatureFlags {
+    pub(crate) fn as_flags(&self) -> NVSDK_NGX_DLSS_Feature_Flags {
+        let mut flags = self.clone();
+        flags.remove(DlssFeatureFlags::PartialTextureInputs);
+        flags.bits()
     }
 }
 

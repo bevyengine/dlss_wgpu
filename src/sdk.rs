@@ -1,17 +1,17 @@
 use crate::{feature_info::with_feature_info, nvsdk_ngx::*};
-use std::{ops::Deref, ptr, rc::Rc};
+use std::{ptr, rc::Rc};
 use uuid::Uuid;
 use wgpu::{hal::api::Vulkan, Device};
 
 /// TODO: Docs
-pub struct DlssSdk<D: Deref<Target = Device>> {
+pub struct DlssSdk {
     pub(crate) parameters: *mut NVSDK_NGX_Parameter,
-    pub(crate) device: D,
+    pub(crate) device: Device,
 }
 
 /// TODO: Docs
-impl<D: Deref<Target = Device>> DlssSdk<D> {
-    pub fn new(project_id: Uuid, device: D) -> Result<Rc<Self>, DlssError> {
+impl DlssSdk {
+    pub fn new(project_id: Uuid, device: Device) -> Result<Rc<Self>, DlssError> {
         let mut parameters = ptr::null_mut();
         unsafe {
             device.as_hal::<Vulkan, _, _>(|device| {
@@ -58,7 +58,7 @@ impl<D: Deref<Target = Device>> DlssSdk<D> {
     }
 }
 
-impl<D: Deref<Target = Device>> Drop for DlssSdk<D> {
+impl Drop for DlssSdk {
     fn drop(&mut self) {
         unsafe {
             self.device.as_hal::<Vulkan, _, _>(|device| {

@@ -1,40 +1,29 @@
 use crate::{nvsdk_ngx::*, DlssSdk};
 use glam::{UVec2, Vec2};
-use std::{
-    iter,
-    ops::{Deref, RangeInclusive},
-    ptr,
-    rc::Rc,
-};
+use std::{iter, ops::RangeInclusive, ptr, rc::Rc};
 use wgpu::{
     hal::{api::Vulkan, vulkan::conv::map_subresource_range},
-    Adapter, CommandEncoder, Device, TextureUsages,
+    Adapter, CommandEncoder, TextureUsages,
 };
 
 /// TODO: Docs
-pub struct DlssContext<D: Deref<Target = Device>> {
+pub struct DlssContext {
     upscaled_resolution: UVec2,
     min_render_resolution: UVec2,
     max_render_resolution: UVec2,
-    sdk: Rc<DlssSdk<D>>,
+    sdk: Rc<DlssSdk>,
     feature: *mut NVSDK_NGX_Handle,
 }
 
 /// TODO: Docs
-impl<D: Deref<Target = Device>> DlssContext<D> {
+impl DlssContext {
     pub fn new(
         upscaled_resolution: UVec2,
         preset: DlssPreset,
-        mut feature_flags: DlssFeatureFlags,
-        sdk: &Rc<DlssSdk<D>>,
+        feature_flags: DlssFeatureFlags,
+        sdk: Rc<DlssSdk>,
         command_encoder: &mut CommandEncoder,
     ) -> Result<Self, DlssError> {
-        let sdk = Rc::clone(sdk);
-
-        // Not part of NVSDK_NGX_DLSS_Feature_Flags
-        let enable_output_subrects = feature_flags.contains(DlssFeatureFlags::PartialTextureInputs);
-        feature_flags.remove(DlssFeatureFlags::PartialTextureInputs);
-
         let perf_quality_value = preset.as_perf_quality_value(upscaled_resolution);
 
         let mut optimal_render_resolution = UVec2::ZERO;
@@ -70,8 +59,8 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
                 InTargetHeight: upscaled_resolution.y,
                 InPerfQualityValue: perf_quality_value,
             },
-            InFeatureCreateFlags: feature_flags.bits(),
-            InEnableOutputSubrects: enable_output_subrects,
+            InFeatureCreateFlags: feature_flags.as_flags(),
+            InEnableOutputSubrects: feature_flags.contains(DlssFeatureFlags::PartialTextureInputs),
         };
 
         unsafe {
@@ -223,7 +212,7 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
     }
 }
 
-impl<D: Deref<Target = Device>> Drop for DlssContext<D> {
+impl Drop for DlssContext {
     fn drop(&mut self) {
         unsafe {
             self.sdk.device.as_hal::<Vulkan, _, _>(|device| {
