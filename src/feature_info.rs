@@ -1,10 +1,12 @@
 use crate::nvsdk_ngx::*;
-use std::env;
-use std::ffi::{CString, OsStr, OsString};
-use std::ptr;
+use std::{
+    env,
+    ffi::{CString, OsStr, OsString},
+    ptr,
+};
 use uuid::Uuid;
 
-// TODO: Remove most allocations
+/// TODO: Docs
 pub fn with_feature_info<F, T>(project_id: Uuid, callback: F) -> T
 where
     F: FnOnce(&NVSDK_NGX_FeatureDiscoveryInfo) -> T,
@@ -17,15 +19,16 @@ where
     let platform = "Linux_x86_64";
     #[cfg(target_os = "windows")]
     let platform = "Windows_x86_64";
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "debug_overlay")]
     let profile = "dev";
-    #[cfg(not(debug_assertions))]
+    #[cfg(not(feature = "debug_overlay"))]
     let profile = "rel";
-    let sdk_path = format!("{}/lib/{platform}/{profile}", env!("DLSS_SDK")); // TODO: option_env!
-    let shared_library_paths = [
-        os_str_to_wchar(&OsString::from(".")),
-        os_str_to_wchar(&OsString::from(sdk_path)),
-    ];
+    let sdk_path = option_env!("DLSS_SDK").map(|sdk| format!("{sdk}/lib/{platform}/{profile}"));
+
+    let mut shared_library_paths = vec![os_str_to_wchar(&OsString::from("."))];
+    if let Some(sdk_path) = sdk_path.as_ref() {
+        shared_library_paths.push(os_str_to_wchar(&OsString::from(sdk_path)));
+    }
 
     let shared_library_path_pointers = shared_library_paths
         .iter()

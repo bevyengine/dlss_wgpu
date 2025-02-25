@@ -1,14 +1,17 @@
-use crate::nvsdk_ngx::*;
-use crate::DlssSdk;
+use crate::{nvsdk_ngx::*, DlssSdk};
 use glam::{UVec2, Vec2};
-use std::iter;
-use std::ops::{Deref, RangeInclusive};
-use std::ptr;
-use std::rc::Rc;
-use wgpu::hal::api::Vulkan;
-use wgpu::hal::vulkan::conv::map_subresource_range;
-use wgpu::{Adapter, CommandEncoder, Device, TextureUsages};
+use std::{
+    iter,
+    ops::{Deref, RangeInclusive},
+    ptr,
+    rc::Rc,
+};
+use wgpu::{
+    hal::{api::Vulkan, vulkan::conv::map_subresource_range},
+    Adapter, CommandEncoder, Device, TextureUsages,
+};
 
+/// TODO: Docs
 pub struct DlssContext<D: Deref<Target = Device>> {
     upscaled_resolution: UVec2,
     min_render_resolution: UVec2,
@@ -17,6 +20,7 @@ pub struct DlssContext<D: Deref<Target = Device>> {
     feature: *mut NVSDK_NGX_Handle,
 }
 
+/// TODO: Docs
 impl<D: Deref<Target = Device>> DlssContext<D> {
     pub fn new(
         upscaled_resolution: UVec2,
@@ -27,42 +31,11 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
     ) -> Result<Self, DlssError> {
         let sdk = Rc::clone(sdk);
 
+        // Not part of NVSDK_NGX_DLSS_Feature_Flags
         let enable_output_subrects = feature_flags.contains(DlssFeatureFlags::PartialTextureInputs);
         feature_flags.remove(DlssFeatureFlags::PartialTextureInputs);
 
-        let perf_quality_value = match preset {
-            DlssPreset::Auto => {
-                let mega_pixels =
-                    (upscaled_resolution.x * upscaled_resolution.y) as f32 / 1_000_000.0;
-
-                if mega_pixels < 3.68 {
-                    NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxQuality
-                } else if mega_pixels < 8.29 {
-                    NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxPerf
-                } else {
-                    NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraPerformance
-                }
-            }
-            DlssPreset::Native => {
-                // Doesn't really matter
-                NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraQuality
-            }
-            DlssPreset::UltraQuality => {
-                NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraQuality
-            }
-            DlssPreset::Quality => {
-                NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxQuality
-            }
-            DlssPreset::Balanced => {
-                NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_Balanced
-            }
-            DlssPreset::Performance => {
-                NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxPerf
-            }
-            DlssPreset::UltraPerformance => {
-                NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraPerformance
-            }
-        };
+        let perf_quality_value = preset.as_perf_quality_value(upscaled_resolution);
 
         let mut optimal_render_resolution = UVec2::ZERO;
         let mut min_render_resolution = UVec2::ZERO;
@@ -83,7 +56,7 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
                 &mut deprecated_sharpness,
             ))?;
         }
-        if preset == DlssPreset::Native {
+        if preset == DlssPreset::Dlaa {
             optimal_render_resolution = upscaled_resolution;
             min_render_resolution = upscaled_resolution;
             max_render_resolution = upscaled_resolution;
@@ -124,6 +97,7 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
         }
     }
 
+    /// TODO: Docs
     pub fn render(
         &mut self,
         render_parameters: DlssRenderParameters,
@@ -216,6 +190,7 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
         result
     }
 
+    /// TODO: Docs
     pub fn suggested_jitter(&self, frame_count: u32, render_resolution: UVec2) -> Vec2 {
         let ratio = self.upscaled_resolution.x as f32 / render_resolution.x as f32;
         let phase_count = (8.0 * ratio * ratio) as u32;
@@ -227,18 +202,22 @@ impl<D: Deref<Target = Device>> DlssContext<D> {
         } - 0.5
     }
 
+    /// TODO: Docs
     pub fn suggested_mip_bias(&self, render_resolution: UVec2) -> f32 {
         (render_resolution.x as f32 / self.upscaled_resolution.x as f32).log2() - 1.0
     }
 
+    /// TODO: Docs
     pub fn upscaled_resolution(&self) -> UVec2 {
         self.upscaled_resolution
     }
 
+    /// TODO: Docs
     pub fn render_resolution(&self) -> UVec2 {
         self.min_render_resolution
     }
 
+    /// TODO: Docs
     pub fn render_resolution_range(&self) -> RangeInclusive<UVec2> {
         self.min_render_resolution..=self.max_render_resolution
     }

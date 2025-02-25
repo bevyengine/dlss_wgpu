@@ -22,11 +22,12 @@ use glam::{UVec2, Vec2};
 use std::ffi::OsStr;
 use wgpu::{ImageSubresourceRange, Texture, TextureUsages, TextureView};
 
+/// TODO: Docs
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Debug)]
 pub enum DlssPreset {
     #[default]
     Auto,
-    Native,
+    Dlaa,
     UltraQuality,
     Quality,
     Balanced,
@@ -34,6 +35,41 @@ pub enum DlssPreset {
     UltraPerformance,
 }
 
+impl DlssPreset {
+    pub(crate) fn as_perf_quality_value(
+        &self,
+        upscaled_resolution: UVec2,
+    ) -> NVSDK_NGX_PerfQuality_Value {
+        match self {
+            Self::Auto => {
+                let mega_pixels =
+                    (upscaled_resolution.x * upscaled_resolution.y) as f32 / 1_000_000.0;
+
+                if mega_pixels < 2.03 {
+                    NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_DLAA
+                } else if mega_pixels < 3.68 {
+                    NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxQuality
+                } else if mega_pixels < 8.29 {
+                    NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxPerf
+                } else {
+                    NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraPerformance
+                }
+            }
+            Self::Dlaa => NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_DLAA,
+            Self::UltraQuality => {
+                NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraQuality
+            }
+            Self::Quality => NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxQuality,
+            Self::Balanced => NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_Balanced,
+            Self::Performance => NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxPerf,
+            Self::UltraPerformance => {
+                NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraPerformance
+            }
+        }
+    }
+}
+
+/// TODO: Docs
 bitflags::bitflags! {
     pub struct DlssFeatureFlags: NVSDK_NGX_DLSS_Feature_Flags {
         const HighDynamicRange = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
@@ -41,11 +77,13 @@ bitflags::bitflags! {
         const JitteredMotionVectors = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
         const InvertedDepth = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
         const AutoExposure = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
-        const PartialTextureInputs = 1 << 7;
+        const AlphaUpscaling = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AlphaUpscaling;
+        const PartialTextureInputs = 256; // Not part of NVSDK_NGX_DLSS_Feature_Flags
     }
 }
 
 // TODO: Allow configuring partial texture origins
+/// TODO: Docs
 pub struct DlssRenderParameters<'a> {
     pub color: DlssTexture<'a>,
     pub depth: DlssTexture<'a>,
@@ -61,6 +99,7 @@ pub struct DlssRenderParameters<'a> {
     pub motion_vector_scale: Option<Vec2>,
 }
 
+/// TODO: Docs
 pub enum DlssExposure<'a> {
     Manual {
         exposure: DlssTexture<'a>,
@@ -70,6 +109,7 @@ pub enum DlssExposure<'a> {
     Automatic,
 }
 
+/// TODO: Docs
 pub struct DlssTexture<'a> {
     pub texture: &'a Texture,
     pub view: &'a TextureView,
@@ -77,10 +117,11 @@ pub struct DlssTexture<'a> {
     pub usages: TextureUsages,
 }
 
+/// TODO: Docs
 #[derive(thiserror::Error, Debug)]
-pub enum DlssRequestDeviceError {
+pub enum RequestDeviceError {
     #[error(transparent)]
-    WgpuRequestDeviceError(#[from] wgpu::RequestDeviceError),
+    RequestDeviceError(#[from] wgpu::RequestDeviceError),
     #[error(transparent)]
     DeviceError(#[from] wgpu::hal::DeviceError),
     #[error(transparent)]
@@ -89,6 +130,7 @@ pub enum DlssRequestDeviceError {
     DlssError(#[from] DlssError),
 }
 
+/// TODO: Docs
 #[derive(thiserror::Error, Debug)]
 pub enum DlssError {
     #[error("TODO")]

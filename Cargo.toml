@@ -16,3 +16,6 @@ thiserror = "2"
 [build-dependencies]
 bindgen = "0.71"
 cc = "1"
+
+[features]
+debug_overlay = []
