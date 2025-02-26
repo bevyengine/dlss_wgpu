@@ -97,9 +97,11 @@ impl<'a> DlssTexture<'a> {
                     base_array_layer: 0,
                     layer_count: REMAINING_ARRAY_LAYERS,
                 },
-                adapter
-                    .texture_format_as_hal::<Vulkan>(self.texture.format())
-                    .unwrap(),
+                adapter.as_hal::<Vulkan, _, _>(|adapter| {
+                    adapter
+                        .unwrap()
+                        .texture_format_as_raw(self.texture.format())
+                }),
                 self.texture.width(),
                 self.texture.height(),
                 self.texture
