@@ -2,6 +2,13 @@
 
 Allows using [DLSS](https://www.nvidia.com/en-us/geforce/technologies/dlss) with [wgpu](https://github.com/gfx-rs/wgpu) when targeting the Vulkan.
 
+
+## Version Chart
+
+| dlss_wgpu |   dlss   | wgpu |
+|:---------:|:--------:|:----:|
+|    v1.0   | v310.1.0 |  v25 |
+
 ## Downloading The DLSS SDK
 The DLSS SDK cannot be redistributed by this crate. You will need to download the SDK as follows:
 * Clone the NVIDIA DLSS Super Resolution SDK v310.1.0 from https://github.com/NVIDIA/DLSS
