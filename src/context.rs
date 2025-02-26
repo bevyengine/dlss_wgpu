@@ -1,7 +1,7 @@
 use crate::{nvsdk_ngx::*, DlssExposure, DlssRenderParameters, DlssSdk};
 use glam::{UVec2, Vec2};
 use std::{iter, ops::RangeInclusive, ptr, rc::Rc};
-use wgpu::{hal::api::Vulkan, Adapter, CommandEncoder};
+use wgpu::{hal::api::Vulkan, Adapter, CommandEncoder, CommandEncoderDescriptor, Device, Queue};
 
 /// TODO: Docs
 pub struct DlssContext {
@@ -19,7 +19,8 @@ impl DlssContext {
         preset: DlssPreset,
         feature_flags: DlssFeatureFlags,
         sdk: Rc<DlssSdk>,
-        command_encoder: &mut CommandEncoder,
+        device: &Device,
+        queue: &Queue,
     ) -> Result<Self, DlssError> {
         let perf_quality_value = preset.as_perf_quality_value(upscaled_resolution);
 
@@ -60,7 +61,11 @@ impl DlssContext {
             InEnableOutputSubrects: feature_flags.contains(DlssFeatureFlags::PartialTextureInputs),
         };
 
-        unsafe {
+        let mut command_encoder = device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("dlss_context_creation"),
+        });
+
+        let result = unsafe {
             command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
                 let mut feature = ptr::null_mut();
                 check_ngx_result(NGX_VULKAN_CREATE_DLSS_EXT(
@@ -80,7 +85,13 @@ impl DlssContext {
                     feature,
                 })
             })
+        };
+
+        if result.is_ok() {
+            queue.submit([command_encoder.finish()]);
         }
+
+        result
     }
 
     /// TODO: Docs
