@@ -1,6 +1,6 @@
 # dlss_wgpu - Deep Learning Super Sampling for wgpu
 
-Allows using [DLSS](https://www.nvidia.com/en-us/geforce/technologies/dlss) with [wgpu](https://github.com/gfx-rs/wgpu) when targeting the Vulkan.
+A wrapper for using [DLSS](https://www.nvidia.com/en-us/geforce/technologies/dlss) with [wgpu](https://github.com/gfx-rs/wgpu) when targeting Vulkan.
 
 
 ## Version Chart
