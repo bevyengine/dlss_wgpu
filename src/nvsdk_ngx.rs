@@ -91,19 +91,6 @@ impl DlssFeatureFlags {
 
 /// TODO: Docs
 #[derive(thiserror::Error, Debug)]
-pub enum RequestDeviceError {
-    #[error(transparent)]
-    RequestDeviceError(#[from] wgpu::RequestDeviceError),
-    #[error(transparent)]
-    DeviceError(#[from] wgpu::hal::DeviceError),
-    #[error(transparent)]
-    VulkanError(#[from] ash::vk::Result),
-    #[error(transparent)]
-    DlssError(#[from] DlssError),
-}
-
-/// TODO: Docs
-#[derive(thiserror::Error, Debug)]
 pub enum DlssError {
     #[error("TODO")]
     FeatureNotSupported,

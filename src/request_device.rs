@@ -2,7 +2,6 @@ use crate::{
     feature_info::with_feature_info,
     nvsdk_ngx::{
         check_ngx_result, DlssError, NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements,
-        RequestDeviceError,
     },
 };
 use ash::vk::{DeviceCreateInfo, DeviceQueueCreateInfo, Instance, PhysicalDevice};
@@ -110,4 +109,17 @@ fn dlss_device_extensions(
 
         Ok(dlss_device_extensions)
     })
+}
+
+/// TODO: Docs
+#[derive(thiserror::Error, Debug)]
+pub enum RequestDeviceError {
+    #[error(transparent)]
+    RequestDeviceError(#[from] wgpu::RequestDeviceError),
+    #[error(transparent)]
+    DeviceError(#[from] wgpu::hal::DeviceError),
+    #[error(transparent)]
+    VulkanError(#[from] ash::vk::Result),
+    #[error(transparent)]
+    DlssError(#[from] DlssError),
 }
