@@ -17,7 +17,7 @@ The DLSS SDK cannot be redistributed by this crate. You will need to download th
 
 ## Build Dependencies
 * Install the DLSS SDK
-* Install the Vulkan SDK https://vulkan.lunarg.com/sdk/home and set the `VULKAN_SDK environment variable
+* Install the Vulkan SDK https://vulkan.lunarg.com/sdk/home and set the `VULKAN_SDK` environment variable
 * Install clang https://rust-lang.github.io/rust-bindgen/requirements.html#clang
 
 ## Debug Overlay
