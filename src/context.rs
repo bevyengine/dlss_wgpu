@@ -1,10 +1,7 @@
-use crate::{nvsdk_ngx::*, DlssSdk};
+use crate::{nvsdk_ngx::*, DlssExposure, DlssRenderParameters, DlssSdk};
 use glam::{UVec2, Vec2};
 use std::{iter, ops::RangeInclusive, ptr, rc::Rc};
-use wgpu::{
-    hal::{api::Vulkan, vulkan::conv::map_subresource_range},
-    Adapter, CommandEncoder, TextureUsages,
-};
+use wgpu::{hal::api::Vulkan, Adapter, CommandEncoder};
 
 /// TODO: Docs
 pub struct DlssContext {
@@ -93,19 +90,19 @@ impl DlssContext {
         command_encoder: &mut CommandEncoder,
         adapter: &Adapter,
     ) -> Result<(), DlssError> {
-        // TODO: Validate render_parameters
+        render_parameters.validate()?;
 
         let partial_texture_size = render_parameters
             .partial_texture_size
             .unwrap_or(self.max_render_resolution);
 
-        let (exposure, exposure_scale, pre_exposure) = match render_parameters.exposure {
+        let (exposure, exposure_scale, pre_exposure) = match &render_parameters.exposure {
             DlssExposure::Manual {
                 exposure,
                 exposure_scale,
                 pre_exposure,
             } => (
-                &mut dlss_resource(&exposure, adapter) as *mut _,
+                &mut exposure.as_resource(adapter) as *mut _,
                 exposure_scale.unwrap_or(1.0),
                 pre_exposure.unwrap_or(0.0),
             ),
@@ -114,12 +111,12 @@ impl DlssContext {
 
         let mut dlss_eval_params = NVSDK_NGX_VK_DLSS_Eval_Params {
             Feature: NVSDK_NGX_VK_Feature_Eval_Params {
-                pInColor: &mut dlss_resource(&render_parameters.color, adapter),
-                pInOutput: &mut dlss_resource(&render_parameters.dlss_output, adapter),
+                pInColor: &mut render_parameters.color.as_resource(adapter),
+                pInOutput: &mut render_parameters.dlss_output.as_resource(adapter),
                 InSharpness: 0.0,
             },
-            pInDepth: &mut dlss_resource(&render_parameters.depth, adapter),
-            pInMotionVectors: &mut dlss_resource(&render_parameters.motion_vectors, adapter),
+            pInDepth: &mut render_parameters.depth.as_resource(adapter),
+            pInMotionVectors: &mut render_parameters.motion_vectors.as_resource(adapter),
             InJitterOffsetX: render_parameters.jitter_offset.x,
             InJitterOffsetY: render_parameters.jitter_offset.y,
             InRenderSubrectDimensions: NVSDK_NGX_Dimensions {
@@ -129,13 +126,13 @@ impl DlssContext {
             InReset: render_parameters.reset as _,
             InMVScaleX: render_parameters.motion_vector_scale.unwrap_or(Vec2::ONE).x,
             InMVScaleY: render_parameters.motion_vector_scale.unwrap_or(Vec2::ONE).y,
-            pInTransparencyMask: match render_parameters.transparency_mask {
-                Some(transparency_mask) => &mut dlss_resource(&transparency_mask, adapter),
+            pInTransparencyMask: match &render_parameters.transparency_mask {
+                Some(transparency_mask) => &mut transparency_mask.as_resource(adapter),
                 None => ptr::null_mut(),
             },
             pInExposureTexture: exposure,
-            pInBiasCurrentColorMask: match render_parameters.bias {
-                Some(bias) => &mut dlss_resource(&bias, adapter),
+            pInBiasCurrentColorMask: match &render_parameters.bias {
+                Some(bias) => &mut bias.as_resource(adapter),
                 None => ptr::null_mut(),
             },
             InColorSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
@@ -163,7 +160,7 @@ impl DlssContext {
         };
 
         command_encoder.push_debug_group("dlss");
-        command_encoder.transition_resources(iter::empty(), [todo!()]);
+        command_encoder.transition_resources(iter::empty(), render_parameters.barrier_list());
         let result = unsafe {
             command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
                 check_ngx_result(NGX_VULKAN_EVALUATE_DLSS_EXT(
@@ -174,7 +171,7 @@ impl DlssContext {
                 ))
             })
         };
-        command_encoder.transition_resources(iter::empty(), [todo!()]);
+        command_encoder.transition_resources(iter::empty(), render_parameters.barrier_list());
         command_encoder.pop_debug_group();
         result
     }
@@ -226,26 +223,6 @@ impl Drop for DlssContext {
                     .expect("Failed to destroy DlssContext feature");
             });
         }
-    }
-}
-
-fn dlss_resource(texture: &DlssTexture, adapter: &Adapter) -> NVSDK_NGX_Resource_VK {
-    unsafe {
-        NVSDK_NGX_Create_ImageView_Resource_VK(
-            texture
-                .view
-                .as_hal::<Vulkan, _, _>(|v| v.unwrap().raw_handle()),
-            texture
-                .texture
-                .as_hal::<Vulkan, _, _>(|t| t.unwrap().raw_handle()),
-            map_subresource_range(&texture.subresource_range, texture.texture.format()),
-            adapter
-                .texture_format_as_hal::<Vulkan>(texture.texture.format())
-                .unwrap(),
-            texture.texture.width(),
-            texture.texture.height(),
-            texture.usages.contains(TextureUsages::STORAGE_BINDING),
-        )
     }
 }
 

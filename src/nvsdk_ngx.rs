@@ -18,9 +18,7 @@ type VkImageView = ash::vk::ImageView;
 type VkInstance = ash::vk::Instance;
 type VkPhysicalDevice = ash::vk::PhysicalDevice;
 
-use glam::{UVec2, Vec2};
-use std::ffi::OsStr;
-use wgpu::{ImageSubresourceRange, Texture, TextureUsages, TextureView};
+use glam::UVec2;
 
 /// TODO: Docs
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Debug)]
@@ -89,41 +87,6 @@ impl DlssFeatureFlags {
         flags.remove(DlssFeatureFlags::PartialTextureInputs);
         flags.bits()
     }
-}
-
-// TODO: Allow configuring partial texture origins
-/// TODO: Docs
-pub struct DlssRenderParameters<'a> {
-    pub color: DlssTexture<'a>,
-    pub depth: DlssTexture<'a>,
-    pub motion_vectors: DlssTexture<'a>,
-    pub exposure: DlssExposure<'a>,
-    pub transparency_mask: Option<DlssTexture<'a>>,
-    pub bias: Option<DlssTexture<'a>>,
-    pub dlss_output: DlssTexture<'a>,
-
-    pub reset: bool,
-    pub jitter_offset: Vec2,
-    pub partial_texture_size: Option<UVec2>,
-    pub motion_vector_scale: Option<Vec2>,
-}
-
-/// TODO: Docs
-pub enum DlssExposure<'a> {
-    Manual {
-        exposure: DlssTexture<'a>,
-        exposure_scale: Option<f32>,
-        pre_exposure: Option<f32>,
-    },
-    Automatic,
-}
-
-/// TODO: Docs
-pub struct DlssTexture<'a> {
-    pub texture: &'a Texture,
-    pub view: &'a TextureView,
-    pub subresource_range: ImageSubresourceRange,
-    pub usages: TextureUsages,
 }
 
 /// TODO: Docs
