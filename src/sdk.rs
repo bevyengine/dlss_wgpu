@@ -1,5 +1,5 @@
 use crate::{feature_info::with_feature_info, nvsdk_ngx::*};
-use std::{ptr, rc::Rc};
+use std::{ptr, rc::Rc, thread};
 use uuid::Uuid;
 use wgpu::{hal::api::Vulkan, Device};
 
@@ -12,8 +12,10 @@ pub struct DlssSdk {
 /// TODO: Docs
 impl DlssSdk {
     pub fn new(project_id: Uuid, device: Device) -> Result<Rc<Self>, DlssError> {
-        let mut parameters = ptr::null_mut();
+        check_for_updates(project_id);
+
         unsafe {
+            let mut parameters = ptr::null_mut();
             device.as_hal::<Vulkan, _, _>(|device| {
                 let device = device.unwrap();
                 let shared_instance = device.shared_instance();
@@ -56,6 +58,14 @@ impl DlssSdk {
             Ok(Rc::new(Self { parameters, device }))
         }
     }
+}
+
+fn check_for_updates(project_id: Uuid) {
+    thread::spawn(move || {
+        with_feature_info(project_id, |feature_info| unsafe {
+            NVSDK_NGX_UpdateFeature(&feature_info.Identifier, feature_info.FeatureID);
+        });
+    });
 }
 
 impl Drop for DlssSdk {
