@@ -11,19 +11,22 @@ fn main() {
     #[cfg(not(target_os = "windows"))]
     {
         println!("cargo:rustc-link-search=native={dlss_sdk}/lib/Linux_x86_64");
-        println!("cargo:rustc-link-search=native={vulkan_sdk}/lib");
-
         println!("cargo:rustc-link-lib=static=nvsdk_ngx");
-        println!("cargo:rustc-link-lib=dylib=vulkan");
         println!("cargo:rustc-link-lib=dylib=stdc++");
         println!("cargo:rustc-link-lib=dylib=dl");
+
+        println!("cargo:rustc-link-search=native={vulkan_sdk}/lib");
+        println!("cargo:rustc-link-lib=dylib=vulkan");
     }
     #[cfg(target_os = "windows")]
     {
         println!("cargo:rustc-link-search=native={dlss_sdk}/lib/Windows_x86_64/x64");
-        println!("cargo:rustc-link-search=native={vulkan_sdk}/Lib");
-
+        #[cfg(not(target_feature = "crt-static"))]
         println!("cargo:rustc-link-lib=static=nvsdk_ngx_d");
+        #[cfg(target_feature = "crt-static")]
+        println!("cargo:rustc-link-lib=static=nvsdk_ngx_s");
+
+        println!("cargo:rustc-link-search=native={vulkan_sdk}/Lib");
         println!("cargo:rustc-link-lib=dylib=vulkan-1");
     }
 
