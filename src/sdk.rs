@@ -58,6 +58,15 @@ impl DlssSdk {
             Ok(Rc::new(Self { parameters, device }))
         }
     }
+
+    /// Returns the number of bytes of VRAM allocated by DLSS.
+    pub fn get_vram_allocated_bytes(&self) -> Result<u64, DlssError> {
+        let mut vram_allocated_bytes = 0;
+        check_ngx_result(unsafe {
+            NGX_DLSS_GET_STATS(self.parameters, &mut vram_allocated_bytes)
+        })?;
+        Ok(vram_allocated_bytes)
+    }
 }
 
 fn check_for_updates(project_id: Uuid) {
