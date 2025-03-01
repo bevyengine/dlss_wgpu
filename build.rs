@@ -14,9 +14,6 @@ fn main() {
         println!("cargo:rustc-link-lib=static=nvsdk_ngx");
         println!("cargo:rustc-link-lib=dylib=stdc++");
         println!("cargo:rustc-link-lib=dylib=dl");
-
-        println!("cargo:rustc-link-search=native={vulkan_sdk}/lib");
-        println!("cargo:rustc-link-lib=dylib=vulkan");
     }
     #[cfg(target_os = "windows")]
     {
@@ -25,9 +22,6 @@ fn main() {
         println!("cargo:rustc-link-lib=static=nvsdk_ngx_d");
         #[cfg(target_feature = "crt-static")]
         println!("cargo:rustc-link-lib=static=nvsdk_ngx_s");
-
-        println!("cargo:rustc-link-search=native={vulkan_sdk}/Lib");
-        println!("cargo:rustc-link-lib=dylib=vulkan-1");
     }
 
     // Generate rust bindings
@@ -43,8 +37,10 @@ fn main() {
         .clang_arg(format!("-I{dlss_sdk}/include"))
         .clang_arg(format!("-I{vulkan_sdk}/{vulkan_sdk_include}"))
         .allowlist_item(".*NGX.*")
-        .blocklist_type("Vk.*")
-        .blocklist_type("PFN_vk.*")
+        .blocklist_item("Vk.*")
+        .blocklist_item("PFN_vk.*")
+        .blocklist_item(".*Cuda.*")
+        .blocklist_item(".*CUDA.*")
         .generate()
         .unwrap()
         .write_to_file(out_dir.join("bindings.rs"))
