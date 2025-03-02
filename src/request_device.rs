@@ -18,19 +18,20 @@ pub fn request_device(
 ) -> Result<(Device, Queue), RequestDeviceError> {
     unsafe {
         let open_device: Result<_, RequestDeviceError> =
-            adapter.as_hal::<Vulkan, _, _>(|adapter| {
-                let adapter = adapter.unwrap();
-                let raw_instance = adapter.shared_instance().raw_instance();
-                let raw_physical_device = adapter.raw_physical_device();
+            adapter.as_hal::<Vulkan, _, _>(|raw_adapter| {
+                let raw_adapter = raw_adapter.unwrap();
+                let raw_instance = raw_adapter.shared_instance().raw_instance();
+                let raw_physical_device = raw_adapter.raw_physical_device();
 
                 let mut enabled_extensions =
-                    adapter.required_device_extensions(device_descriptor.required_features);
+                    raw_adapter.required_device_extensions(device_descriptor.required_features);
                 enabled_extensions.extend(dlss_device_extensions(
                     project_id,
+                    raw_adapter,
                     raw_instance.handle(),
                     raw_physical_device,
                 )?);
-                let mut enabled_phd_features = adapter.physical_device_features(
+                let mut enabled_phd_features = raw_adapter.physical_device_features(
                     &enabled_extensions,
                     device_descriptor.required_features,
                 );
@@ -50,19 +51,10 @@ pub fn request_device(
                     .queue_create_infos(&family_infos)
                     .enabled_extension_names(&str_pointers);
                 let info = enabled_phd_features.add_to_device_create(pre_info);
-                // TODO: Varies per gpu/driver?
-                // .push_next(
-                //     &mut PhysicalDeviceBufferDeviceAddressFeaturesEXT::default()
-                //         .buffer_device_address(true),
-                // )
-                // .push_next(
-                //     &mut PhysicalDeviceHostQueryResetFeaturesEXT::default()
-                //         .host_query_reset(true),
-                // ),
 
                 let raw_device = raw_instance.create_device(raw_physical_device, &info, None)?;
 
-                Ok(adapter.device_from_raw(
+                Ok(raw_adapter.device_from_raw(
                     raw_device,
                     None,
                     &enabled_extensions,
@@ -85,6 +77,7 @@ pub fn request_device(
 
 fn dlss_device_extensions(
     project_id: Uuid,
+    raw_adapter: &wgpu::hal::vulkan::Adapter,
     raw_instance: Instance,
     raw_physical_device: PhysicalDevice,
 ) -> Result<impl Iterator<Item = &'static CStr>, DlssError> {
@@ -106,6 +99,14 @@ fn dlss_device_extensions(
         let dlss_device_extensions = dlss_device_extensions
             .iter()
             .map(|extension| CStr::from_ptr(extension.extension_name.as_ptr()));
+
+        if !dlss_device_extensions.clone().all(|extension| {
+            raw_adapter
+                .physical_device_capabilities()
+                .supports_extension(extension)
+        }) {
+            return Err(DlssError::FeatureNotSupported);
+        }
 
         Ok(dlss_device_extensions)
     })
