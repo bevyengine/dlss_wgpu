@@ -16,13 +16,13 @@ pub struct DlssContext {
 impl DlssContext {
     pub fn new(
         upscaled_resolution: UVec2,
-        preset: DlssPreset,
+        perf_quality_mode: DlssPerfQualityMode,
         feature_flags: DlssFeatureFlags,
         sdk: Rc<DlssSdk>,
         device: &Device,
         queue: &Queue,
     ) -> Result<Self, DlssError> {
-        let perf_quality_value = preset.as_perf_quality_value(upscaled_resolution);
+        let perf_quality_value = perf_quality_mode.as_perf_quality_value(upscaled_resolution);
 
         let mut optimal_render_resolution = UVec2::ZERO;
         let mut min_render_resolution = UVec2::ZERO;
@@ -43,7 +43,7 @@ impl DlssContext {
                 &mut deprecated_sharpness,
             ))?;
         }
-        if preset == DlssPreset::Dlaa {
+        if perf_quality_mode == DlssPerfQualityMode::Dlaa {
             optimal_render_resolution = upscaled_resolution;
             min_render_resolution = upscaled_resolution;
             max_render_resolution = upscaled_resolution;

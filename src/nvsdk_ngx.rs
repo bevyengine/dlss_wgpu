@@ -22,7 +22,7 @@ use glam::UVec2;
 
 /// TODO: Docs
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Debug)]
-pub enum DlssPreset {
+pub enum DlssPerfQualityMode {
     #[default]
     Auto,
     Dlaa,
@@ -33,7 +33,7 @@ pub enum DlssPreset {
     UltraPerformance,
 }
 
-impl DlssPreset {
+impl DlssPerfQualityMode {
     pub(crate) fn as_perf_quality_value(
         &self,
         upscaled_resolution: UVec2,
