@@ -58,7 +58,7 @@ impl DlssContext {
                 InPerfQualityValue: perf_quality_value,
             },
             InFeatureCreateFlags: feature_flags.as_flags(),
-            InEnableOutputSubrects: feature_flags.contains(DlssFeatureFlags::PartialTextureInputs),
+            InEnableOutputSubrects: feature_flags.contains(DlssFeatureFlags::OutputSubrect),
         };
 
         let mut command_encoder = device.create_command_encoder(&CommandEncoderDescriptor {

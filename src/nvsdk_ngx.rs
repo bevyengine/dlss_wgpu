@@ -77,14 +77,14 @@ bitflags::bitflags! {
         const InvertedDepth = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
         const AutoExposure = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
         const AlphaUpscaling = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AlphaUpscaling;
-        const PartialTextureInputs = 256; // Not part of NVSDK_NGX_DLSS_Feature_Flags
+        const OutputSubrect = 256; // Not part of NVSDK_NGX_DLSS_Feature_Flags
     }
 }
 
 impl DlssFeatureFlags {
     pub(crate) fn as_flags(&self) -> NVSDK_NGX_DLSS_Feature_Flags {
         let mut flags = self.clone();
-        flags.remove(DlssFeatureFlags::PartialTextureInputs);
+        flags.remove(DlssFeatureFlags::OutputSubrect);
         flags.bits()
     }
 }
