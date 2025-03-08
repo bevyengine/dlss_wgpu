@@ -54,7 +54,7 @@ impl<'a> DlssRenderParameters<'a> {
             Some(TextureTransition {
                 texture: self.dlss_output.texture,
                 selector: None,
-                state: TextureUses::STORAGE_READ_WRITE,
+                state: TextureUses::STORAGE_READ_WRITE | TextureUses::COPY_DST,
             }),
         ]
         .into_iter()

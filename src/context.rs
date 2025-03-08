@@ -182,7 +182,6 @@ impl DlssContext {
                 ))
             })
         };
-        command_encoder.transition_resources(iter::empty(), render_parameters.barrier_list());
         command_encoder.pop_debug_group();
         result
     }
