@@ -101,3 +101,4 @@ impl Drop for DlssSdk {
 }
 
 unsafe impl Send for DlssSdk {}
+unsafe impl Sync for DlssContext {}
