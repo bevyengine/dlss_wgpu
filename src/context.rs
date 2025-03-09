@@ -240,6 +240,8 @@ impl Drop for DlssContext {
     }
 }
 
+unsafe impl Send for DlssContext {}
+
 fn halton_sequence(mut index: u32, base: u32) -> f32 {
     let mut f = 1.0;
     let mut result = 0.0;

@@ -99,3 +99,5 @@ impl Drop for DlssSdk {
         }
     }
 }
+
+unsafe impl Send for DlssSdk {}
