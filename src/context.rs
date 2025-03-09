@@ -170,9 +170,8 @@ impl DlssContext {
             pInMotionVectorsReflections: ptr::null_mut(),
         };
 
-        command_encoder.push_debug_group("dlss");
         command_encoder.transition_resources(iter::empty(), render_parameters.barrier_list());
-        let result = unsafe {
+        unsafe {
             command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
                 check_ngx_result(NGX_VULKAN_EVALUATE_DLSS_EXT(
                     command_encoder.unwrap().raw_handle(),
@@ -181,9 +180,7 @@ impl DlssContext {
                     &mut dlss_eval_params,
                 ))
             })
-        };
-        command_encoder.pop_debug_group();
-        result
+        }
     }
 
     /// TODO: Docs
