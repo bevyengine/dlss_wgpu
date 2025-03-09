@@ -1,5 +1,9 @@
 use crate::{feature_info::with_feature_info, nvsdk_ngx::*};
-use std::{ptr, rc::Rc, thread};
+use std::{
+    ptr,
+    sync::{Arc, Mutex},
+    thread,
+};
 use uuid::Uuid;
 use wgpu::{hal::api::Vulkan, Device};
 
@@ -11,7 +15,7 @@ pub struct DlssSdk {
 
 /// TODO: Docs
 impl DlssSdk {
-    pub fn new(project_id: Uuid, device: Device) -> Result<Rc<Self>, DlssError> {
+    pub fn new(project_id: Uuid, device: Device) -> Result<Arc<Mutex<Self>>, DlssError> {
         check_for_updates(project_id);
 
         unsafe {
@@ -55,12 +59,12 @@ impl DlssSdk {
                 return Err(DlssError::FeatureNotSupported);
             }
 
-            Ok(Rc::new(Self { parameters, device }))
+            Ok(Arc::new(Mutex::new(Self { parameters, device })))
         }
     }
 
     /// Returns the number of bytes of VRAM allocated by DLSS.
-    pub fn get_vram_allocated_bytes(&self) -> Result<u64, DlssError> {
+    pub fn get_vram_allocated_bytes(&mut self) -> Result<u64, DlssError> {
         let mut vram_allocated_bytes = 0;
         check_ngx_result(unsafe {
             NGX_DLSS_GET_STATS(self.parameters, &mut vram_allocated_bytes)

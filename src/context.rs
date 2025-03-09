@@ -1,6 +1,11 @@
 use crate::{nvsdk_ngx::*, DlssExposure, DlssRenderParameters, DlssSdk};
 use glam::{UVec2, Vec2};
-use std::{iter, ops::RangeInclusive, ptr, rc::Rc};
+use std::{
+    iter,
+    ops::RangeInclusive,
+    ptr,
+    sync::{Arc, Mutex},
+};
 use wgpu::{hal::api::Vulkan, Adapter, CommandEncoder, CommandEncoderDescriptor, Device, Queue};
 
 /// TODO: Docs
@@ -8,7 +13,8 @@ pub struct DlssContext {
     upscaled_resolution: UVec2,
     min_render_resolution: UVec2,
     max_render_resolution: UVec2,
-    sdk: Rc<DlssSdk>,
+    device: Device,
+    sdk: Arc<Mutex<DlssSdk>>,
     feature: *mut NVSDK_NGX_Handle,
 }
 
@@ -18,10 +24,12 @@ impl DlssContext {
         upscaled_resolution: UVec2,
         perf_quality_mode: DlssPerfQualityMode,
         feature_flags: DlssFeatureFlags,
-        sdk: Rc<DlssSdk>,
+        sdk: Arc<Mutex<DlssSdk>>,
         device: &Device,
         queue: &Queue,
     ) -> Result<Self, DlssError> {
+        let locked_sdk = sdk.lock().unwrap();
+
         let perf_quality_value = perf_quality_mode.as_perf_quality_value(upscaled_resolution);
 
         let mut optimal_render_resolution = UVec2::ZERO;
@@ -30,7 +38,7 @@ impl DlssContext {
         unsafe {
             let mut deprecated_sharpness = 0.0f32;
             check_ngx_result(NGX_DLSS_GET_OPTIMAL_SETTINGS(
-                sdk.parameters,
+                locked_sdk.parameters,
                 upscaled_resolution.x,
                 upscaled_resolution.y,
                 perf_quality_value,
@@ -65,33 +73,30 @@ impl DlssContext {
             label: Some("dlss_context_creation"),
         });
 
-        let result = unsafe {
+        let mut feature = ptr::null_mut();
+        unsafe {
             command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
-                let mut feature = ptr::null_mut();
                 check_ngx_result(NGX_VULKAN_CREATE_DLSS_EXT(
                     command_encoder.unwrap().raw_handle(),
                     1,
                     1,
                     &mut feature,
-                    sdk.parameters,
+                    locked_sdk.parameters,
                     &mut dlss_create_params,
-                ))?;
-
-                Ok(Self {
-                    upscaled_resolution,
-                    min_render_resolution,
-                    max_render_resolution,
-                    sdk,
-                    feature,
-                })
-            })
-        };
-
-        if result.is_ok() {
-            queue.submit([command_encoder.finish()]);
+                ))
+            })?
         }
 
-        result
+        queue.submit([command_encoder.finish()]);
+
+        Ok(Self {
+            upscaled_resolution,
+            min_render_resolution,
+            max_render_resolution,
+            device: device.clone(),
+            sdk: Arc::clone(&sdk),
+            feature,
+        })
     }
 
     /// TODO: Docs
@@ -102,6 +107,8 @@ impl DlssContext {
         adapter: &Adapter,
     ) -> Result<(), DlssError> {
         render_parameters.validate()?;
+
+        let sdk = self.sdk.lock().unwrap();
 
         let partial_texture_size = render_parameters
             .partial_texture_size
@@ -176,7 +183,7 @@ impl DlssContext {
                 check_ngx_result(NGX_VULKAN_EVALUATE_DLSS_EXT(
                     command_encoder.unwrap().raw_handle(),
                     self.feature,
-                    self.sdk.parameters,
+                    sdk.parameters,
                     &mut dlss_eval_params,
                 ))
             })
@@ -219,7 +226,7 @@ impl DlssContext {
 impl Drop for DlssContext {
     fn drop(&mut self) {
         unsafe {
-            self.sdk.device.as_hal::<Vulkan, _, _>(|device| {
+            self.device.as_hal::<Vulkan, _, _>(|device| {
                 device
                     .unwrap()
                     .raw_device()
