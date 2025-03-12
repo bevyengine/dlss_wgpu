@@ -194,7 +194,7 @@ impl DlssContext {
     pub fn suggested_jitter(&self, frame_count: u32, render_resolution: UVec2) -> Vec2 {
         let ratio = self.upscaled_resolution.x as f32 / render_resolution.x as f32;
         let phase_count = (8.0 * ratio * ratio) as u32;
-        let i = (frame_count % phase_count) + 1;
+        let i = frame_count % phase_count;
 
         Vec2 {
             x: halton_sequence(i, 2),
