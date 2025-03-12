@@ -26,7 +26,6 @@ pub enum DlssPerfQualityMode {
     #[default]
     Auto,
     Dlaa,
-    UltraQuality,
     Quality,
     Balanced,
     Performance,
@@ -54,9 +53,6 @@ impl DlssPerfQualityMode {
                 }
             }
             Self::Dlaa => NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_DLAA,
-            Self::UltraQuality => {
-                NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_UltraQuality
-            }
             Self::Quality => NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxQuality,
             Self::Balanced => NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_Balanced,
             Self::Performance => NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_MaxPerf,
