@@ -17,7 +17,6 @@ pub struct DlssRenderParameters<'a> {
     pub depth: DlssTexture<'a>,
     pub motion_vectors: DlssTexture<'a>,
     pub exposure: DlssExposure<'a>,
-    pub transparency_mask: Option<DlssTexture<'a>>,
     pub bias: Option<DlssTexture<'a>>,
     pub dlss_output: DlssTexture<'a>,
     pub reset: bool,
@@ -49,7 +48,6 @@ impl<'a> DlssRenderParameters<'a> {
                 DlssExposure::Manual { exposure, .. } => Some(resource_barrier(exposure)),
                 DlssExposure::Automatic => None,
             },
-            self.transparency_mask.as_ref().map(resource_barrier),
             self.bias.as_ref().map(resource_barrier),
             Some(TextureTransition {
                 texture: self.dlss_output.texture,

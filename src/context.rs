@@ -144,10 +144,7 @@ impl DlssContext {
             InReset: render_parameters.reset as _,
             InMVScaleX: render_parameters.motion_vector_scale.unwrap_or(Vec2::ONE).x,
             InMVScaleY: render_parameters.motion_vector_scale.unwrap_or(Vec2::ONE).y,
-            pInTransparencyMask: match &render_parameters.transparency_mask {
-                Some(transparency_mask) => &mut transparency_mask.as_resource(adapter),
-                None => ptr::null_mut(),
-            },
+            pInTransparencyMask: ptr::null_mut(),
             pInExposureTexture: exposure,
             pInBiasCurrentColorMask: match &render_parameters.bias {
                 Some(bias) => &mut bias.as_resource(adapter),
