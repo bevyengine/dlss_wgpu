@@ -5,7 +5,7 @@ use crate::{
     },
 };
 use ash::vk::{DeviceCreateInfo, DeviceQueueCreateInfo, Instance, PhysicalDevice};
-use std::{ffi::CStr, path::Path, ptr, slice};
+use std::{ffi::CStr, ptr, slice};
 use uuid::Uuid;
 use wgpu::{hal::api::Vulkan, Adapter, Device, DeviceDescriptor, Queue};
 
@@ -14,7 +14,6 @@ pub fn request_device(
     project_id: Uuid,
     adapter: &Adapter,
     device_descriptor: &DeviceDescriptor,
-    trace_path: Option<&Path>,
 ) -> Result<(Device, Queue), RequestDeviceError> {
     unsafe {
         let open_device: Result<_, RequestDeviceError> =
@@ -65,13 +64,7 @@ pub fn request_device(
                 )?)
             });
 
-        Ok(
-            adapter.create_device_from_hal::<Vulkan>(
-                open_device?,
-                device_descriptor,
-                trace_path,
-            )?,
-        )
+        Ok(adapter.create_device_from_hal::<Vulkan>(open_device?, device_descriptor)?)
     }
 }
 
