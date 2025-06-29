@@ -1,7 +1,7 @@
 [package]
 name = "dlss_wgpu"
 version = "1.0.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 wgpu = { version = "25", default-features = false, features = ["vulkan"] }
