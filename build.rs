@@ -50,7 +50,6 @@ fn main() {
     cc::Build::new()
         .file(out_dir.join("wrap_static_fns.c"))
         .includes([
-            format!("{}/src/wrapper.h", env!("CARGO_MANIFEST_DIR")),
             format!("{dlss_sdk}/include"),
             format!("{vulkan_sdk}/{vulkan_sdk_include}"),
         ])
