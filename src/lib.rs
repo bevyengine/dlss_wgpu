@@ -1,6 +1,6 @@
 //! # dlss_wgpu
 //!
-//! This crate provides safe Rust bindings for integrating NVIDIA DLSS (Deep Learning Super Sampling) with the `wgpu` graphics API.
+//! This crate provides Rust bindings for integrating NVIDIA DLSS (Deep Learning Super Sampling) with the `wgpu` graphics API.
 //!
 //! ## Setup
 //! See <https://github.com/JMS55/dlss_wgpu/blob/main/README.md> for setup instructions.
