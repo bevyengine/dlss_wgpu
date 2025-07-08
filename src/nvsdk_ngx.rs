@@ -98,41 +98,67 @@ impl DlssFeatureFlags {
 /// Errors thrown by DLSS.
 #[derive(thiserror::Error, Debug)]
 pub enum DlssError {
-    #[error("TODO")]
+    #[error(
+        "The NGX SDK or a specific feature is not supported by the current system, hardware, and/or graphics API."
+    )]
     FeatureNotSupported,
-    #[error("TODO")]
+    #[error(
+        "An error occurred within the underlying platform, which includes the graphics API in use, the operating system, or other system libraries and dependencies that are not part of the NGX SDK, such as NvAPI. Consult the NGX logs and the graphics API's validation layers for detailed information."
+    )]
     PlatformError,
-    #[error("TODO")]
+    #[error(
+        "The NGX feature could not be created because a feature with identical parameters already exists, and the feature does not support multiple identical instances."
+    )]
     FeatureAlreadyExists,
-    #[error("TODO")]
+    #[error("A feature associated with the provided handle could not be found.")]
     FeatureNotFound,
-    #[error("TODO")]
+    #[error(
+        "One or more provided parameters had an incorrect value or type, or a required parameter was not provided."
+    )]
     InvalidParameters,
-    #[error("TODO")]
+    #[error(
+        "The feature requires a scratch buffer, but none was provided or the provided buffer is too small. Use NVSDK_NGX_GetScratchBufferSize to determine the necessary size."
+    )]
     ScratchBufferTooSmall,
-    #[error("TODO")]
+    #[error(
+        "A function that requires the NGX SDK to be initialized was called before the SDK was properly initialized."
+    )]
     NotInitialized,
-    #[error("TODO")]
+    #[error("One or more input buffers supplied to the feature had an unsupported format.")]
     UnsupportedInputFormat,
-    #[error("TODO")]
+    #[error(
+        "The feature requires read/write access to output buffers, but one or more provided buffers did not have the correct access flags (UAV in D3D11/D3D12)."
+    )]
     RWFlagMissing,
-    #[error("TODO")]
+    #[error("A required input parameter was not provided.")]
     MissingInput,
-    #[error("TODO")]
+    #[error(
+        "The requested feature could not be initialized, likely because the library for that feature could not be found."
+    )]
     UnableToInitializeFeature,
-    #[error("TODO")]
+    #[error(
+        "A function was used which requires a newer version of the NVIDIA Display Driver or feature library than is currently installed."
+    )]
     OutOfDate,
-    #[error("TODO")]
+    #[error("An operation could not be completed because the system lacked sufficient GPU memory.")]
     OutOfGPUMemory,
-    #[error("TODO")]
+    #[error("One or more buffers provided to the feature had an unsupported format.")]
     UnsupportedFormat,
-    #[error("TODO")]
+    #[error(
+        "The SDK does not have the necessary write permissions for the path specified in InApplicationDataPath."
+    )]
     UnableToWriteToAppDataPath,
-    #[error("TODO")]
+    #[error(
+        "A parameter supplied to the feature is either unsupported by the current version or has an unsupported value."
+    )]
     UnsupportedParameter,
-    #[error("TODO")]
+    #[error(
+        "NVIDIA has restricted the use of this feature in the current application. Contact NVIDIA for further information."
+    )]
     Denied,
-    #[error("TODO")]
+    #[error(
+        "The requested feature or functionality has not been implemented in the current version of the NGX SDK, display driver, or feature library."
+    )]
     NotImplemented,
 }
 
