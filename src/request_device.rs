@@ -14,6 +14,8 @@ use wgpu::{Adapter, Device, DeviceDescriptor, Queue, hal::api::Vulkan};
 /// If the system does not support DLSS, it will return [`DlssError::FeatureNotSupported`] wrapped in [`RequestDeviceError::DlssError`].
 ///
 /// When DLSS is not supported, users should fallback to using [`wgpu::Adapter::request_device`].
+///
+/// The provided [`Adapter`] must be using the Vulkan backend.
 pub fn request_device(
     project_id: Uuid,
     adapter: &Adapter,
@@ -22,7 +24,8 @@ pub fn request_device(
     unsafe {
         let open_device: Result<_, RequestDeviceError> =
             adapter.as_hal::<Vulkan, _, _>(|raw_adapter| {
-                let raw_adapter = raw_adapter.unwrap();
+                let raw_adapter = raw_adapter.ok_or(RequestDeviceError::UnsupportedBackend)?;
+
                 let raw_instance = raw_adapter.shared_instance().raw_instance();
                 let raw_physical_device = raw_adapter.raw_physical_device();
 
@@ -120,4 +123,6 @@ pub enum RequestDeviceError {
     VulkanError(#[from] ash::vk::Result),
     #[error(transparent)]
     DlssError(#[from] DlssError),
+    #[error("Provided adapter is not using the Vulkan backend")]
+    UnsupportedBackend,
 }

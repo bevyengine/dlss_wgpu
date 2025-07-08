@@ -5,6 +5,8 @@
 //! ## Setup
 //! See <https://github.com/JMS55/dlss_wgpu/blob/main/README.md> for setup instructions.
 //!
+//! This crate only works with wgpu's Vulkan backend. Other backends are not supported.
+//!
 //! For further info on how to integrate DLSS into your application, read `$DLSS_SDK/doc/DLSS_Programming_Guide_Release.pdf`.
 //!
 //! ## API Usage
