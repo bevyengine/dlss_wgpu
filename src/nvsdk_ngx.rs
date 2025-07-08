@@ -20,11 +20,13 @@ type VkPhysicalDevice = ash::vk::PhysicalDevice;
 
 use glam::UVec2;
 
-/// TODO: Docs
+/// How much DLSS should upscale by.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Debug)]
 pub enum DlssPerfQualityMode {
+    /// Let DLSS decide.
     #[default]
     Auto,
+    /// Anti-aliasing only, no upscaling.
     Dlaa,
     Quality,
     Balanced,
@@ -63,16 +65,24 @@ impl DlssPerfQualityMode {
     }
 }
 
-/// TODO: Docs
 bitflags::bitflags! {
+    /// Flags for creating a [`crate::DlssContext`].
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct DlssFeatureFlags: NVSDK_NGX_DLSS_Feature_Flags {
+        /// Use an HDR texture for [`crate::DlssRenderParameters::color`] instead of an SDR texture.
         const HighDynamicRange = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
+        /// Motion vector values in [`crate::DlssRenderParameters::motion_vectors`] are at the upscaled resolution,
+        /// instead of render resolution.
         const LowResolutionMotionVectors = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+        /// Motion vector values in [`crate::DlssRenderParameters::motion_vectors`] contain jitter.
         const JitteredMotionVectors = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
+        /// Camera is using a reverse depth buffer for [`crate::DlssRenderParameters::depth`].
         const InvertedDepth = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+        /// Have DLSS apply auto-exposure.
         const AutoExposure = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+        /// Use a 4 channel RGBA texture for [`crate::DlssRenderParameters::color`] instead of a 3 channel RGB texture.
         const AlphaUpscaling = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AlphaUpscaling;
+        /// Allow DLSS to write to a subrect of [`crate::DlssRenderParameters::dlss_output`].
         const OutputSubrect = 256; // Not part of NVSDK_NGX_DLSS_Feature_Flags
     }
 }
@@ -85,7 +95,7 @@ impl DlssFeatureFlags {
     }
 }
 
-/// TODO: Docs
+/// Errors thrown by DLSS.
 #[derive(thiserror::Error, Debug)]
 pub enum DlssError {
     #[error("TODO")]

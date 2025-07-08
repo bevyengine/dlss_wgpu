@@ -1,15 +1,19 @@
 use crate::{
     feature_info::with_feature_info,
     nvsdk_ngx::{
-        check_ngx_result, DlssError, NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements,
+        DlssError, NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements, check_ngx_result,
     },
 };
 use ash::vk::{DeviceCreateInfo, DeviceQueueCreateInfo, Instance, PhysicalDevice};
 use std::{ffi::CStr, ptr, slice};
 use uuid::Uuid;
-use wgpu::{hal::api::Vulkan, Adapter, Device, DeviceDescriptor, Queue};
+use wgpu::{Adapter, Device, DeviceDescriptor, Queue, hal::api::Vulkan};
 
-/// TODO: Docs
+/// Creates a wgpu [`Device`] and [`Queue`] with the extensions required for DLSS.
+///
+/// If the system does not support DLSS, it will return [`DlssError::FeatureNotSupported`] wrapped in [`RequestDeviceError::DlssError`].
+///
+/// When DLSS is not supported, users should fallback to using [`wgpu::Adapter::request_device`].
 pub fn request_device(
     project_id: Uuid,
     adapter: &Adapter,
@@ -105,7 +109,7 @@ fn dlss_device_extensions(
     })
 }
 
-/// TODO: Docs
+/// Error returned by [`request_device`].
 #[derive(thiserror::Error, Debug)]
 pub enum RequestDeviceError {
     #[error(transparent)]

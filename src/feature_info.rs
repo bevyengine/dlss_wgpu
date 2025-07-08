@@ -6,7 +6,6 @@ use std::{
 };
 use uuid::Uuid;
 
-/// TODO: Docs
 pub fn with_feature_info<F, T>(project_id: Uuid, callback: F) -> T
 where
     F: FnOnce(&NVSDK_NGX_FeatureDiscoveryInfo) -> T,

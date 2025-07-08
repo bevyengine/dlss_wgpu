@@ -1,27 +1,37 @@
 use crate::{
-    nvsdk_ngx::{NVSDK_NGX_Create_ImageView_Resource_VK, NVSDK_NGX_Resource_VK},
     DlssError,
+    nvsdk_ngx::{NVSDK_NGX_Create_ImageView_Resource_VK, NVSDK_NGX_Resource_VK},
 };
 use ash::vk::{
     ImageAspectFlags, ImageSubresourceRange, REMAINING_ARRAY_LAYERS, REMAINING_MIP_LEVELS,
 };
 use glam::{UVec2, Vec2};
 use wgpu::{
-    hal::api::Vulkan, Adapter, Texture, TextureTransition, TextureUsages, TextureUses, TextureView,
+    Adapter, Texture, TextureTransition, TextureUsages, TextureUses, TextureView, hal::api::Vulkan,
 };
 
-// TODO: Allow configuring partial texture origins
-/// TODO: Docs
+/// Inputs and output resources needed for rendering DLSS.
 pub struct DlssRenderParameters<'a> {
+    /// Main color view of your camera.
     pub color: DlssTexture<'a>,
+    /// Depth buffer.
     pub depth: DlssTexture<'a>,
+    // Motion vectors.
     pub motion_vectors: DlssTexture<'a>,
+    /// Camera exposure settings.
     pub exposure: DlssExposure<'a>,
+    /// Optional per-pixel bias to make DLSS more reactive.
     pub bias: Option<DlssTexture<'a>>,
+    /// The texture DLSS outputs to.
     pub dlss_output: DlssTexture<'a>,
+    /// Whether DLSS should reset temporal history, useful for camera cuts.
     pub reset: bool,
+    /// Subpixel jitter that was applied to your camera.
     pub jitter_offset: Vec2,
+    /// Optionally use only a specific subrect of the input textures, rather than the whole textures.
+    // TODO: Allow configuring partial texture origins
     pub partial_texture_size: Option<UVec2>,
+    /// Optional scaling factor to apply to the values contained within [`Self::motion_vectors`].
     pub motion_vector_scale: Option<Vec2>,
 }
 
@@ -60,17 +70,19 @@ impl<'a> DlssRenderParameters<'a> {
     }
 }
 
-/// TODO: Docs
+/// Camera exposure used by DLSS.
 pub enum DlssExposure<'a> {
+    /// Exposure controlled by the application.
     Manual {
         exposure: DlssTexture<'a>,
         exposure_scale: Option<f32>,
         pre_exposure: Option<f32>,
     },
+    /// Auto-exposure handled by DLSS.
     Automatic,
 }
 
-/// TODO: Docs
+/// Wrapper for a texture(view) used by [`DlssRenderParameters`].
 pub struct DlssTexture<'a> {
     pub texture: &'a Texture,
     pub view: &'a TextureView,

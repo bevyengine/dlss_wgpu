@@ -1,4 +1,4 @@
-use crate::{nvsdk_ngx::*, DlssExposure, DlssRenderParameters, DlssSdk};
+use crate::{DlssExposure, DlssRenderParameters, DlssSdk, nvsdk_ngx::*};
 use glam::{UVec2, Vec2};
 use std::{
     iter,
@@ -6,9 +6,9 @@ use std::{
     ptr,
     sync::{Arc, Mutex},
 };
-use wgpu::{hal::api::Vulkan, Adapter, CommandEncoder, CommandEncoderDescriptor, Device, Queue};
+use wgpu::{Adapter, CommandEncoder, CommandEncoderDescriptor, Device, Queue, hal::api::Vulkan};
 
-/// TODO: Docs
+/// Camera-specific object for using DLSS.
 pub struct DlssContext {
     upscaled_resolution: UVec2,
     min_render_resolution: UVec2,
@@ -18,8 +18,10 @@ pub struct DlssContext {
     feature: *mut NVSDK_NGX_Handle,
 }
 
-/// TODO: Docs
 impl DlssContext {
+    /// Create a new [`DlssContext`].
+    ///
+    /// This is an expensive operation. The resulting context should be cached, and only recreated when settings change.
     pub fn new(
         upscaled_resolution: UVec2,
         perf_quality_mode: DlssPerfQualityMode,
@@ -99,7 +101,7 @@ impl DlssContext {
         })
     }
 
-    /// TODO: Docs
+    /// Encode commands to render DLSS.
     pub fn render(
         &mut self,
         render_parameters: DlssRenderParameters,
@@ -187,11 +189,11 @@ impl DlssContext {
         }
     }
 
-    /// TODO: Docs
-    pub fn suggested_jitter(&self, frame_count: u32, render_resolution: UVec2) -> Vec2 {
+    /// Suggested subpixel camera jitter for a given frame.
+    pub fn suggested_jitter(&self, frame_number: u32, render_resolution: UVec2) -> Vec2 {
         let ratio = self.upscaled_resolution.x as f32 / render_resolution.x as f32;
         let phase_count = (8.0 * ratio * ratio) as u32;
-        let i = frame_count % phase_count;
+        let i = frame_number % phase_count;
 
         Vec2 {
             x: halton_sequence(i, 2),
@@ -199,22 +201,22 @@ impl DlssContext {
         } - 0.5
     }
 
-    /// TODO: Docs
+    /// Suggested mip bias for sampling textures.
     pub fn suggested_mip_bias(&self, render_resolution: UVec2) -> f32 {
         (render_resolution.x as f32 / self.upscaled_resolution.x as f32).log2() - 1.0
     }
 
-    /// TODO: Docs
+    /// The upscaled resolution DLSS will output at.
     pub fn upscaled_resolution(&self) -> UVec2 {
         self.upscaled_resolution
     }
 
-    /// TODO: Docs
+    /// The resolution the camera should render at, pre-upscaling.
     pub fn render_resolution(&self) -> UVec2 {
         self.min_render_resolution
     }
 
-    /// TODO: Docs
+    /// Like [`Self::render_resolution`], but returns a range of values for use with dynamic resolution scaling.
     pub fn render_resolution_range(&self) -> RangeInclusive<UVec2> {
         self.min_render_resolution..=self.max_render_resolution
     }

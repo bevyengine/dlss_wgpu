@@ -5,16 +5,18 @@ use std::{
     thread,
 };
 use uuid::Uuid;
-use wgpu::{hal::api::Vulkan, Device};
+use wgpu::{Device, hal::api::Vulkan};
 
-/// TODO: Docs
+/// Application-wide DLSS object.
 pub struct DlssSdk {
     pub(crate) parameters: *mut NVSDK_NGX_Parameter,
     pub(crate) device: Device,
 }
 
-/// TODO: Docs
 impl DlssSdk {
+    /// Creates the DLSS SDK.
+    ///
+    /// This should be done once per application.
     pub fn new(project_id: Uuid, device: Device) -> Result<Arc<Mutex<Self>>, DlssError> {
         check_for_updates(project_id);
 
