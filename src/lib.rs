@@ -11,19 +11,16 @@
 //!
 //! ## API Usage
 //! ```rust
-//! use dlss_wgpu::{DlssSdk, DlssContext, DlssPerfQualityMode, DlssFeatureFlags, DlssRenderParameters, request_device};
+//! use dlss_wgpu::{DlssSdk, DlssContext, DlssPerfQualityMode, DlssFeatureFlags, DlssRenderParameters};
 //!
 //! let project_id = Uuid::parse_str("...").unwrap();
 //!
 //! // Request a wgpu device and queue
-//! let (device, queue) = {
-//!     match dlss_wgpu::request_device(dlss_project_id, &adapter, &device_descriptor) {
-//!         Ok(x) => {
-//!             dlss_supported = true;
-//!             x
-//!         }
+//! let ((device, queue), dlss_supported) = {
+//!     match dlss_wgpu::request_device(project_id, &adapter, &device_descriptor) {
+//!         Ok(x) => (x, true),
 //!         // Fallback to standard device request if DLSS is not supported
-//!         Err(_) => adapter.request_device(&device_descriptor).await.unwrap(),
+//!         Err(_) => (adapter.request_device(&device_descriptor).await.unwrap(), false),
 //!     }
 //! };
 //!
