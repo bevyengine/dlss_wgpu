@@ -89,7 +89,7 @@ bitflags::bitflags! {
 
 impl DlssFeatureFlags {
     pub(crate) fn as_flags(&self) -> NVSDK_NGX_DLSS_Feature_Flags {
-        let mut flags = self.clone();
+        let mut flags = *self;
         flags.remove(DlssFeatureFlags::OutputSubrect);
         flags.bits()
     }
