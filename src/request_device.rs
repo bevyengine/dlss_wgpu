@@ -9,6 +9,8 @@ use std::{ffi::CStr, ptr, slice};
 use uuid::Uuid;
 use wgpu::{Adapter, Device, DeviceDescriptor, Queue, hal::api::Vulkan};
 
+// TODO: Instance-level extensions (blocked on wgpu 26)
+
 /// Creates a wgpu [`Device`] and [`Queue`] with the extensions required for DLSS.
 ///
 /// If the system does not support DLSS, it will return [`DlssError::FeatureNotSupported`] wrapped in [`RequestDeviceError::DlssError`].
