@@ -71,8 +71,12 @@ bitflags::bitflags! {
     pub struct DlssFeatureFlags: NVSDK_NGX_DLSS_Feature_Flags {
         /// Use an HDR texture for [`crate::DlssRenderParameters::color`] instead of an SDR texture.
         const HighDynamicRange = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
-        /// Motion vector values in [`crate::DlssRenderParameters::motion_vectors`] are at the upscaled resolution,
-        /// instead of render resolution.
+        /// Motion vector values in [`crate::DlssRenderParameters::motion_vectors`] are at the render resolution.
+        ///
+        /// Not setting this flag indicates that the motion vectors are at the upscaled resolution and have already been dilated,
+        /// which can lead to higher quality.
+        ///
+        /// Most renderers will want to use this flag.
         const LowResolutionMotionVectors = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
         /// Motion vector values in [`crate::DlssRenderParameters::motion_vectors`] contain jitter.
         const JitteredMotionVectors = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
