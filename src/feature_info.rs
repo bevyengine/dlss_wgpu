@@ -14,21 +14,7 @@ where
     let engine_version = CString::new(env!("CARGO_PKG_VERSION")).unwrap();
     let data_path = os_str_to_wchar(env::temp_dir().as_os_str());
 
-    #[cfg(not(target_os = "windows"))]
-    let platform = "Linux_x86_64";
-    #[cfg(target_os = "windows")]
-    let platform = "Windows_x86_64";
-    #[cfg(feature = "debug_overlay")]
-    let profile = "dev";
-    #[cfg(not(feature = "debug_overlay"))]
-    let profile = "rel";
-    let sdk_path = option_env!("DLSS_SDK").map(|sdk| format!("{sdk}/lib/{platform}/{profile}"));
-
-    let mut shared_library_paths = vec![os_str_to_wchar(&OsString::from("."))];
-    if let Some(sdk_path) = sdk_path.as_ref() {
-        shared_library_paths.push(os_str_to_wchar(&OsString::from(sdk_path)));
-    }
-
+    let shared_library_paths = get_shared_library_paths();
     let shared_library_path_pointers = shared_library_paths
         .iter()
         .map(Vec::as_ptr)
@@ -66,6 +52,29 @@ where
     };
 
     (callback)(&feature_info)
+}
+
+fn get_shared_library_paths() -> Vec<Vec<wchar_t>> {
+    // Look in current direction
+    let mut shared_library_paths = vec![os_str_to_wchar(&OsString::from("."))];
+
+    #[cfg(not(target_os = "windows"))]
+    let platform = "Linux_x86_64";
+    #[cfg(target_os = "windows")]
+    let platform = "Windows_x86_64";
+
+    #[cfg(feature = "debug_overlay")]
+    let profile = "dev";
+    #[cfg(not(feature = "debug_overlay"))]
+    let profile = "rel";
+
+    // Look in $DLSS_SDK if set
+    let sdk_path = option_env!("DLSS_SDK").map(|sdk| format!("{sdk}/lib/{platform}/{profile}"));
+    if let Some(sdk_path) = sdk_path.as_ref() {
+        shared_library_paths.push(os_str_to_wchar(&OsString::from(sdk_path)));
+    }
+
+    shared_library_paths
 }
 
 #[cfg(target_os = "windows")]
