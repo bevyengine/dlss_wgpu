@@ -1,0 +1,19 @@
+[package]
+name = "dlss_wgpu"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+wgpu = { version = "25", default-features = false, features = ["vulkan"] }
+ash = "0.38"
+glam = "0.29"
+uuid = "1"
+bitflags = "2"
+thiserror = "2"
+
+[build-dependencies]
+bindgen = "0.72"
+cc = "1"
+
+[features]
+debug_overlay = []
