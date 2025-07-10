@@ -7,7 +7,7 @@ A wrapper for using [DLSS](https://www.nvidia.com/en-us/geforce/technologies/dls
 
 | dlss_wgpu |   dlss   | wgpu |
 |:---------:|:--------:|:----:|
-|    v1.0   | v310.3.0 |  v25 |
+|    v1.0   | v310.3.0 |  v26 |
 
 ## Downloading The DLSS SDK
 The DLSS SDK cannot be redistributed by this crate. You will need to download the SDK as follows:

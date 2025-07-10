@@ -20,31 +20,29 @@ impl DlssSdk {
     pub fn new(project_id: Uuid, device: Device) -> Result<Arc<Mutex<Self>>, DlssError> {
         check_for_updates(project_id);
 
+        let mut parameters = ptr::null_mut();
         unsafe {
-            let mut parameters = ptr::null_mut();
-            device.as_hal::<Vulkan, _, _>(|device| {
-                let device = device.unwrap();
-                let shared_instance = device.shared_instance();
-                let raw_instance = shared_instance.raw_instance();
+            let hal_device = device.as_hal::<Vulkan>().unwrap();
+            let shared_instance = hal_device.shared_instance();
+            let raw_instance = shared_instance.raw_instance();
 
-                with_feature_info(project_id, |feature_info| {
-                    check_ngx_result(NVSDK_NGX_VULKAN_Init_with_ProjectID(
-                        feature_info.Identifier.v.ProjectDesc.ProjectId,
-                        NVSDK_NGX_EngineType_NVSDK_NGX_ENGINE_TYPE_CUSTOM,
-                        feature_info.Identifier.v.ProjectDesc.EngineVersion,
-                        feature_info.ApplicationDataPath,
-                        raw_instance.handle(),
-                        device.raw_physical_device(),
-                        device.raw_device().handle(),
-                        shared_instance.entry().static_fn().get_instance_proc_addr,
-                        raw_instance.fp_v1_0().get_device_proc_addr,
-                        feature_info.FeatureInfo,
-                        NVSDK_NGX_Version_NVSDK_NGX_Version_API,
-                    ))
-                })?;
-
-                check_ngx_result(NVSDK_NGX_VULKAN_GetCapabilityParameters(&mut parameters))
+            with_feature_info(project_id, |feature_info| {
+                check_ngx_result(NVSDK_NGX_VULKAN_Init_with_ProjectID(
+                    feature_info.Identifier.v.ProjectDesc.ProjectId,
+                    NVSDK_NGX_EngineType_NVSDK_NGX_ENGINE_TYPE_CUSTOM,
+                    feature_info.Identifier.v.ProjectDesc.EngineVersion,
+                    feature_info.ApplicationDataPath,
+                    raw_instance.handle(),
+                    hal_device.raw_physical_device(),
+                    hal_device.raw_device().handle(),
+                    shared_instance.entry().static_fn().get_instance_proc_addr,
+                    raw_instance.fp_v1_0().get_device_proc_addr,
+                    feature_info.FeatureInfo,
+                    NVSDK_NGX_Version_NVSDK_NGX_Version_API,
+                ))
             })?;
+
+            check_ngx_result(NVSDK_NGX_VULKAN_GetCapabilityParameters(&mut parameters))?;
 
             let mut dlss_supported = 0;
             let result = check_ngx_result(NVSDK_NGX_Parameter_GetI(
@@ -60,9 +58,9 @@ impl DlssSdk {
                 check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(parameters))?;
                 return Err(DlssError::FeatureNotSupported);
             }
-
-            Ok(Arc::new(Mutex::new(Self { parameters, device })))
         }
+
+        Ok(Arc::new(Mutex::new(Self { parameters, device })))
     }
 
     /// Returns the number of bytes of VRAM allocated by DLSS.
@@ -86,18 +84,16 @@ fn check_for_updates(project_id: Uuid) {
 impl Drop for DlssSdk {
     fn drop(&mut self) {
         unsafe {
-            self.device.as_hal::<Vulkan, _, _>(|device| {
-                let device = device.unwrap().raw_device();
+            let hal_device = self.device.as_hal::<Vulkan>().unwrap();
+            hal_device
+                .raw_device()
+                .device_wait_idle()
+                .expect("Failed to wait for idle device when destroying DlssSdk");
 
-                device
-                    .device_wait_idle()
-                    .expect("Failed to wait for idle device when destroying DlssSdk");
-
-                check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(self.parameters))
-                    .expect("Failed to destroy DlssSdk parameters");
-                check_ngx_result(NVSDK_NGX_VULKAN_Shutdown1(device.handle()))
-                    .expect("Failed to destroy DlssSdk");
-            });
+            check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(self.parameters))
+                .expect("Failed to destroy DlssSdk parameters");
+            check_ngx_result(NVSDK_NGX_VULKAN_Shutdown1(hal_device.raw_device().handle()))
+                .expect("Failed to destroy DlssSdk");
         }
     }
 }

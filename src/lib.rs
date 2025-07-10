@@ -58,6 +58,6 @@ mod sdk;
 
 pub use context::DlssContext;
 pub use nvsdk_ngx::{DlssError, DlssFeatureFlags, DlssPerfQualityMode};
-pub use render_parameters::{DlssExposure, DlssRenderParameters, DlssTexture};
+pub use render_parameters::{DlssExposure, DlssRenderParameters};
 pub use request_device::{RequestDeviceError, request_device};
 pub use sdk::DlssSdk;
