@@ -70,7 +70,7 @@ impl DlssPerfQualityMode {
 }
 
 bitflags::bitflags! {
-    /// Flags for creating a [`crate::DlssContext`].
+    /// Flags for creating a DLSS context.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct DlssFeatureFlags: NVSDK_NGX_DLSS_Feature_Flags {
         /// Use an HDR texture for [`crate::DlssRenderParameters::color`] instead of an SDR texture.
