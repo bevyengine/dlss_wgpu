@@ -26,7 +26,7 @@ impl DlssSdk {
             let shared_instance = hal_device.shared_instance();
             let raw_instance = shared_instance.raw_instance();
 
-            with_feature_info(project_id, |feature_info| {
+            with_feature_info(project_id, Default::default(), |feature_info| {
                 check_ngx_result(NVSDK_NGX_VULKAN_Init_with_ProjectID(
                     feature_info.Identifier.v.ProjectDesc.ProjectId,
                     NVSDK_NGX_EngineType_NVSDK_NGX_ENGINE_TYPE_CUSTOM,
@@ -75,9 +75,20 @@ impl DlssSdk {
 
 fn check_for_updates(project_id: Uuid) {
     thread::spawn(move || {
-        with_feature_info(project_id, |feature_info| unsafe {
-            NVSDK_NGX_UpdateFeature(&feature_info.Identifier, feature_info.FeatureID);
-        });
+        with_feature_info(
+            project_id,
+            NVSDK_NGX_Feature_NVSDK_NGX_Feature_SuperSampling,
+            |feature_info| unsafe {
+                NVSDK_NGX_UpdateFeature(&feature_info.Identifier, feature_info.FeatureID);
+            },
+        );
+        with_feature_info(
+            project_id,
+            NVSDK_NGX_Feature_NVSDK_NGX_Feature_RayReconstruction,
+            |feature_info| unsafe {
+                NVSDK_NGX_UpdateFeature(&feature_info.Identifier, feature_info.FeatureID);
+            },
+        );
     });
 }
 

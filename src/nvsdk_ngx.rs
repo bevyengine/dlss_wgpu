@@ -18,7 +18,11 @@ type VkImageView = ash::vk::ImageView;
 type VkInstance = ash::vk::Instance;
 type VkPhysicalDevice = ash::vk::PhysicalDevice;
 
+use ash::vk::{
+    ImageAspectFlags, ImageSubresourceRange, REMAINING_ARRAY_LAYERS, REMAINING_MIP_LEVELS,
+};
 use glam::UVec2;
+use wgpu::{Adapter, TextureUsages, TextureView, wgc::api::Vulkan};
 
 /// How much DLSS should upscale by.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Debug)]
@@ -66,7 +70,7 @@ impl DlssPerfQualityMode {
 }
 
 bitflags::bitflags! {
-    /// Flags for creating a [`crate::DlssContext`].
+    /// Flags for creating a DLSS context.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct DlssFeatureFlags: NVSDK_NGX_DLSS_Feature_Flags {
         /// Use an HDR texture for [`crate::DlssRenderParameters::color`] instead of an SDR texture.
@@ -193,4 +197,45 @@ pub fn check_ngx_result(result: NVSDK_NGX_Result) -> Result<(), DlssError> {
         NVSDK_NGX_RESULT_FAIL_NotImplemented => Err(DlssError::NotImplemented),
         _ => unreachable!(),
     }
+}
+
+pub fn texture_to_ngx(texture_view: &TextureView, adapter: &Adapter) -> NVSDK_NGX_Resource_VK {
+    unsafe {
+        let raw_view = texture_view.as_hal::<Vulkan>().unwrap().raw_handle();
+        let texture = texture_view.texture();
+
+        NVSDK_NGX_Create_ImageView_Resource_VK(
+            raw_view,
+            texture.as_hal::<Vulkan>().unwrap().raw_handle(),
+            ImageSubresourceRange {
+                aspect_mask: if texture.format().has_color_aspect() {
+                    ImageAspectFlags::COLOR
+                } else {
+                    ImageAspectFlags::DEPTH
+                },
+                base_mip_level: 0,
+                level_count: REMAINING_MIP_LEVELS,
+                base_array_layer: 0,
+                layer_count: REMAINING_ARRAY_LAYERS,
+            },
+            adapter
+                .as_hal::<Vulkan>()
+                .unwrap()
+                .texture_format_as_raw(texture.format()),
+            texture.width(),
+            texture.height(),
+            texture.usage().contains(TextureUsages::STORAGE_BINDING),
+        )
+    }
+}
+
+pub fn halton_sequence(mut index: u32, base: u32) -> f32 {
+    let mut f = 1.0;
+    let mut result = 0.0;
+    while index > 0 {
+        f /= base as f32;
+        result += f * (index % base) as f32;
+        index = (index as f32 / base as f32).floor() as u32;
+    }
+    result
 }

@@ -6,7 +6,7 @@ use std::{
 };
 use uuid::Uuid;
 
-pub fn with_feature_info<F, T>(project_id: Uuid, callback: F) -> T
+pub fn with_feature_info<F, T>(project_id: Uuid, feature_id: NVSDK_NGX_Feature, callback: F) -> T
 where
     F: FnOnce(&NVSDK_NGX_FeatureDiscoveryInfo) -> T,
 {
@@ -36,7 +36,7 @@ where
 
     let feature_info = NVSDK_NGX_FeatureDiscoveryInfo {
         SDKVersion: NVSDK_NGX_Version_NVSDK_NGX_Version_API,
-        FeatureID: NVSDK_NGX_Feature_NVSDK_NGX_Feature_SuperSampling,
+        FeatureID: feature_id,
         Identifier: NVSDK_NGX_Application_Identifier {
             IdentifierType: NVSDK_NGX_Application_Identifier_Type_NVSDK_NGX_Application_Identifier_Type_Project_Id,
             v: NVSDK_NGX_Application_Identifier_v {

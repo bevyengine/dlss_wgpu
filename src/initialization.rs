@@ -1,10 +1,4 @@
-use crate::{
-    feature_info::with_feature_info,
-    nvsdk_ngx::{
-        DlssError, NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements,
-        NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements, check_ngx_result,
-    },
-};
+use crate::{feature_info::with_feature_info, nvsdk_ngx::*};
 use ash::{Entry, vk::PhysicalDevice};
 use std::{ffi::CStr, ptr, slice};
 use uuid::Uuid;
@@ -15,11 +9,11 @@ use wgpu::{
 
 /// Creates a wgpu [`Instance`] with the extensions required for DLSS.
 ///
-/// If the system does not support DLSS, it will set `dlss_supported` to false.
+/// If the current system does not support a given feature, it will set the corresponding variable in `feature_support` to false.
 pub fn create_instance(
     project_id: Uuid,
     instance_descriptor: &InstanceDescriptor,
-    dlss_supported: &mut bool,
+    feature_support: &mut FeatureSupport,
 ) -> Result<Instance, InitializationError> {
     unsafe {
         let mut result = Ok(());
@@ -31,11 +25,24 @@ pub fn create_instance(
                 backend_options: instance_descriptor.backend_options.clone(),
             },
             Some(Box::new(|args| {
-                match required_instance_extensions(project_id, args.entry) {
+                match required_instance_extensions(
+                    project_id,
+                    NVSDK_NGX_Feature_NVSDK_NGX_Feature_SuperSampling,
+                    args.entry,
+                ) {
                     Ok((extensions, true)) => args.extensions.extend(extensions),
-                    Ok((_, false)) => *dlss_supported = false,
+                    Ok((_, false)) => feature_support.super_resolution_supported = false,
                     Err(err) => result = Err(err),
-                }
+                };
+                match required_instance_extensions(
+                    project_id,
+                    NVSDK_NGX_Feature_NVSDK_NGX_Feature_RayReconstruction,
+                    args.entry,
+                ) {
+                    Ok((extensions, true)) => args.extensions.extend(extensions),
+                    Ok((_, false)) => feature_support.ray_reconstruction_supported = false,
+                    Err(err) => result = Err(err),
+                };
             })),
         )?;
         result?;
@@ -46,14 +53,14 @@ pub fn create_instance(
 
 /// Creates a wgpu [`Device`] and [`Queue`] with the extensions required for DLSS.
 ///
-/// If the system does not support DLSS, it will set `dlss_supported` to false.
+/// If the current system does not support a given feature, it will set the corresponding variable in `feature_support` to false.
 ///
 /// The provided [`Adapter`] must be using the Vulkan backend.
 pub fn request_device(
     project_id: Uuid,
     adapter: &Adapter,
     device_descriptor: &DeviceDescriptor,
-    dlss_supported: &mut bool,
+    feature_support: &mut FeatureSupport,
 ) -> Result<(Device, Queue), InitializationError> {
     unsafe {
         let raw_adapter = adapter
@@ -69,14 +76,26 @@ pub fn request_device(
             Some(Box::new(|args| {
                 match required_device_extensions(
                     project_id,
+                    NVSDK_NGX_Feature_NVSDK_NGX_Feature_SuperSampling,
                     &raw_adapter,
                     raw_instance.handle(),
                     raw_physical_device,
                 ) {
                     Ok((extensions, true)) => args.extensions.extend(extensions),
-                    Ok((_, false)) => *dlss_supported = false,
+                    Ok((_, false)) => feature_support.super_resolution_supported = false,
                     Err(err) => result = Err(err),
-                }
+                };
+                match required_device_extensions(
+                    project_id,
+                    NVSDK_NGX_Feature_NVSDK_NGX_Feature_RayReconstruction,
+                    &raw_adapter,
+                    raw_instance.handle(),
+                    raw_physical_device,
+                ) {
+                    Ok((extensions, true)) => args.extensions.extend(extensions),
+                    Ok((_, false)) => feature_support.ray_reconstruction_supported = false,
+                    Err(err) => result = Err(err),
+                };
             })),
         )?;
         result?;
@@ -87,9 +106,10 @@ pub fn request_device(
 
 fn required_instance_extensions(
     project_id: Uuid,
+    feature_id: NVSDK_NGX_Feature,
     entry: &Entry,
 ) -> Result<(impl Iterator<Item = &'static CStr>, bool), InitializationError> {
-    with_feature_info(project_id, |feature_info| unsafe {
+    with_feature_info(project_id, feature_id, |feature_info| unsafe {
         // Get required extension names
         let mut required_extensions = ptr::null_mut();
         let mut required_extension_count = 0;
@@ -118,11 +138,12 @@ fn required_instance_extensions(
 
 fn required_device_extensions(
     project_id: Uuid,
+    feature_id: NVSDK_NGX_Feature,
     raw_adapter: &wgpu::hal::vulkan::Adapter,
     raw_instance: ash::vk::Instance,
     raw_physical_device: PhysicalDevice,
 ) -> Result<(impl Iterator<Item = &'static CStr>, bool), InitializationError> {
-    with_feature_info(project_id, |feature_info| unsafe {
+    with_feature_info(project_id, feature_id, |feature_info| unsafe {
         // Get required extension names
         let mut required_extensions = ptr::null_mut();
         let mut required_extension_count = 0;
@@ -148,6 +169,23 @@ fn required_device_extensions(
 
         Ok((required_extensions, extensions_supported))
     })
+}
+
+/// Which DLSS features are supported on the current system.
+pub struct FeatureSupport {
+    /// DLSS Super Resolution (DLSS) is supported.
+    pub super_resolution_supported: bool,
+    /// DLSS Ray Reconstruction (DLSS-RR) is supported.
+    pub ray_reconstruction_supported: bool,
+}
+
+impl Default for FeatureSupport {
+    fn default() -> Self {
+        Self {
+            super_resolution_supported: true,
+            ray_reconstruction_supported: true,
+        }
+    }
 }
 
 /// Error returned by [`request_device`].
