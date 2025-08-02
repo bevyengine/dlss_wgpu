@@ -55,9 +55,9 @@ mod initialization;
 mod nvsdk_ngx;
 mod sdk;
 
-/// DLSS Super Resolution.
-pub mod ray_reconstruction;
 /// DLSS Ray Reconstruction.
+pub mod ray_reconstruction;
+/// DLSS Super Resolution.
 pub mod super_resolution;
 
 pub use initialization::{FeatureSupport, InitializationError, create_instance, request_device};
