@@ -86,10 +86,12 @@ pub(crate) fn texture_to_ngx_resource(
     texture_view: &TextureView,
     adapter: &Adapter,
 ) -> NVSDK_NGX_Resource_VK {
-    let texture = texture_view.texture();
     unsafe {
+        let raw_view = texture_view.as_hal::<Vulkan>().unwrap().raw_handle();
+        let texture = texture_view.texture();
+
         NVSDK_NGX_Create_ImageView_Resource_VK(
-            texture_view.as_hal::<Vulkan>().unwrap().raw_handle(),
+            raw_view,
             texture.as_hal::<Vulkan>().unwrap().raw_handle(),
             ImageSubresourceRange {
                 aspect_mask: if texture.format().has_color_aspect() {
