@@ -11,24 +11,25 @@
 //!
 //! ## API Usage
 //! ```rust
-//! use dlss_wgpu::{DlssSdk, DlssContext, DlssPerfQualityMode, DlssFeatureFlags, DlssRenderParameters};
+//! use dlss_wgpu::{FeatureSupport, DlssSdk, DlssPerfQualityMode, DlssFeatureFlags};
+//! use dlss_wgpu::super_resolution::{DlssSuperResolution, DlssSuperResolutionRenderParameters};
 //!
 //! let project_id = Uuid::parse_str("...").unwrap();
-//! let mut dlss_supported = true;
+//! let mut feature_support = FeatureSupport::default();
 //!
 //! // Initialize wgpu
-//! let instance = dlss_wgpu::create_instance(project_id, &instance_descriptor, &mut dlss_supported).unwrap();
+//! let instance = dlss_wgpu::create_instance(project_id, &instance_descriptor, &mut feature_support).unwrap();
 //! let adapter = instance.request_adapter(&adapter_options).await.unwrap();
-//! let (device, queue) = dlss_wgpu::request_device(project_id, &adapter, &device_descriptor, &mut dlss_supported).unwrap();
+//! let (device, queue) = dlss_wgpu::request_device(project_id, &adapter, &device_descriptor, &mut feature_support).unwrap();
 //!
-//! // Check `dlss_supported`, if false don't create DLSS resources
-//! println!("DLSS supported: {dlss_supported}");
+//! // Check for feature support, if false don't create DLSS resources
+//! println!("DLSS supported: {}", feature_support.super_resolution_supported);
 //!
 //! // Create the SDK once per application
-//! let sdk = DlssSdk::new(project_id, device).expect("Failed to create DLSS SDK");
+//! let sdk = DlssSdk::new(project_id, device).expect("Failed to create DlssSdk");
 //!
 //! // Create a DLSS context once per camera or when DLSS settings change
-//! let mut context = DlssContext::new(
+//! let mut context = DlssSuperResolution::new(
 //!     camera.output_resolution,
 //!     DlssPerfQualityMode::Auto,
 //!     DlssFeatureFlags::empty(),
@@ -36,7 +37,7 @@
 //!     &device,
 //!     &queue,
 //! )
-//! .expect("Failed to create DLSS context");
+//! .expect("Failed to create DlssSuperResolution");
 //!
 //! // Setup camera settings
 //! camera.view_size = context.render_resolution();
@@ -44,20 +45,21 @@
 //! camera.mip_bias = context.suggested_mip_bias(camera.view_size);
 //!
 //! // Encode DLSS render commands
-//! let render_parameters = DlssRenderParameters { ... };
+//! let render_parameters = DlssSuperResolutionRenderParameters { ... };
 //! context.render(render_parameters, &mut command_encoder, &adapter)
 //!     .expect("Failed to render DLSS");
 //! ```
 
-mod context;
 mod feature_info;
 mod initialization;
 mod nvsdk_ngx;
-mod render_parameters;
 mod sdk;
 
-pub use context::DlssContext;
-pub use initialization::{InitializationError, create_instance, request_device};
+/// DLSS Super Resolution.
+pub mod ray_reconstruction;
+/// DLSS Ray Reconstruction.
+pub mod super_resolution;
+
+pub use initialization::{FeatureSupport, InitializationError, create_instance, request_device};
 pub use nvsdk_ngx::{DlssError, DlssFeatureFlags, DlssPerfQualityMode};
-pub use render_parameters::{DlssExposure, DlssRenderParameters};
 pub use sdk::DlssSdk;

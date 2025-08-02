@@ -1,7 +1,4 @@
-use crate::{
-    DlssExposure, DlssRenderParameters, DlssSdk, nvsdk_ngx::*,
-    render_parameters::texture_to_ngx_resource,
-};
+use crate::{DlssSdk, nvsdk_ngx::*};
 use glam::{UVec2, Vec2};
 use std::{
     iter,
@@ -9,10 +6,13 @@ use std::{
     ptr,
     sync::{Arc, Mutex},
 };
-use wgpu::{Adapter, CommandEncoder, CommandEncoderDescriptor, Device, Queue, hal::api::Vulkan};
+use wgpu::{
+    Adapter, CommandEncoder, CommandEncoderDescriptor, Device, Queue, Texture, TextureTransition,
+    TextureUses, TextureView, hal::api::Vulkan,
+};
 
-/// Camera-specific object for using DLSS.
-pub struct DlssContext {
+/// Camera-specific object for using DLSS Super Resolution.
+pub struct DlssSuperResolution {
     upscaled_resolution: UVec2,
     min_render_resolution: UVec2,
     max_render_resolution: UVec2,
@@ -21,10 +21,12 @@ pub struct DlssContext {
     feature: *mut NVSDK_NGX_Handle,
 }
 
-impl DlssContext {
-    /// Create a new [`DlssContext`].
+impl DlssSuperResolution {
+    /// Create a new [`DlssSuperResolution`] object.
     ///
-    /// This is an expensive operation. The resulting context should be cached, and only recreated when settings change.
+    /// This is an expensive operation. The resulting object should be cached, and only recreated when settings change.
+    ///
+    /// This should only be called if [`crate::FeatureSupport::super_resolution_supported`] is true.
     pub fn new(
         upscaled_resolution: UVec2,
         perf_quality_mode: DlssPerfQualityMode,
@@ -62,7 +64,7 @@ impl DlssContext {
             max_render_resolution = upscaled_resolution;
         }
 
-        let mut dlss_create_params = NVSDK_NGX_DLSS_Create_Params {
+        let mut create_params = NVSDK_NGX_DLSS_Create_Params {
             Feature: NVSDK_NGX_Feature_Create_Params {
                 InWidth: optimal_render_resolution.x,
                 InHeight: optimal_render_resolution.y,
@@ -75,7 +77,7 @@ impl DlssContext {
         };
 
         let mut command_encoder = device.create_command_encoder(&CommandEncoderDescriptor {
-            label: Some("dlss_context_creation"),
+            label: Some("dlss_super_resolution_context_creation"),
         });
 
         let mut feature = ptr::null_mut();
@@ -87,7 +89,7 @@ impl DlssContext {
                     1,
                     &mut feature,
                     locked_sdk.parameters,
-                    &mut dlss_create_params,
+                    &mut create_params,
                 ))
             })?
         }
@@ -104,10 +106,10 @@ impl DlssContext {
         })
     }
 
-    /// Encode commands to render DLSS.
+    /// Encode rendering commands for DLSS Super Resolution.
     pub fn render(
         &mut self,
-        render_parameters: DlssRenderParameters,
+        render_parameters: DlssSuperResolutionRenderParameters,
         command_encoder: &mut CommandEncoder,
         adapter: &Adapter,
     ) -> Result<(), DlssError> {
@@ -120,30 +122,27 @@ impl DlssContext {
             .unwrap_or(self.max_render_resolution);
 
         let (exposure, exposure_scale, pre_exposure) = match &render_parameters.exposure {
-            DlssExposure::Manual {
+            DlssSuperResolutionExposure::Manual {
                 exposure,
                 exposure_scale,
                 pre_exposure,
             } => (
-                &mut texture_to_ngx_resource(exposure, adapter) as *mut _,
+                &mut texture_to_ngx(exposure, adapter) as *mut _,
                 exposure_scale.unwrap_or(1.0),
                 pre_exposure.unwrap_or(0.0),
             ),
-            DlssExposure::Automatic => (ptr::null_mut(), 0.0, 0.0),
+            DlssSuperResolutionExposure::Automatic => (ptr::null_mut(), 0.0, 0.0),
         };
 
-        let mut dlss_eval_params = NVSDK_NGX_VK_DLSS_Eval_Params {
+        let mut eval_params = NVSDK_NGX_VK_DLSS_Eval_Params {
             Feature: NVSDK_NGX_VK_Feature_Eval_Params {
-                pInColor: &mut texture_to_ngx_resource(render_parameters.color, adapter) as *mut _,
-                pInOutput: &mut texture_to_ngx_resource(render_parameters.dlss_output, adapter)
-                    as *mut _,
+                pInColor: &mut texture_to_ngx(render_parameters.color, adapter) as *mut _,
+                pInOutput: &mut texture_to_ngx(render_parameters.dlss_output, adapter) as *mut _,
                 InSharpness: 0.0,
             },
-            pInDepth: &mut texture_to_ngx_resource(render_parameters.depth, adapter) as *mut _,
-            pInMotionVectors: &mut texture_to_ngx_resource(
-                render_parameters.motion_vectors,
-                adapter,
-            ) as *mut _,
+            pInDepth: &mut texture_to_ngx(render_parameters.depth, adapter) as *mut _,
+            pInMotionVectors: &mut texture_to_ngx(render_parameters.motion_vectors, adapter)
+                as *mut _,
             InJitterOffsetX: render_parameters.jitter_offset.x,
             InJitterOffsetY: render_parameters.jitter_offset.y,
             InRenderSubrectDimensions: NVSDK_NGX_Dimensions {
@@ -156,7 +155,7 @@ impl DlssContext {
             pInTransparencyMask: ptr::null_mut(),
             pInExposureTexture: exposure,
             pInBiasCurrentColorMask: match &render_parameters.bias {
-                Some(bias) => &mut texture_to_ngx_resource(bias, adapter) as *mut _,
+                Some(bias) => &mut texture_to_ngx(bias, adapter) as *mut _,
                 None => ptr::null_mut(),
             },
             InColorSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
@@ -190,7 +189,7 @@ impl DlssContext {
                     command_encoder.unwrap().raw_handle(),
                     self.feature,
                     sdk.parameters,
-                    &mut dlss_eval_params,
+                    &mut eval_params,
                 ))
             })
         }
@@ -208,7 +207,7 @@ impl DlssContext {
         } - 0.5
     }
 
-    /// Suggested mip bias for sampling textures.
+    /// Suggested mip bias to apply when sampling textures.
     pub fn suggested_mip_bias(&self, render_resolution: UVec2) -> f32 {
         (render_resolution.x as f32 / self.upscaled_resolution.x as f32).log2() - 1.0
     }
@@ -229,31 +228,94 @@ impl DlssContext {
     }
 }
 
-impl Drop for DlssContext {
+impl Drop for DlssSuperResolution {
     fn drop(&mut self) {
         unsafe {
             let hal_device = self.device.as_hal::<Vulkan>().unwrap();
             hal_device
                 .raw_device()
                 .device_wait_idle()
-                .expect("Failed to wait for idle device when destroying DlssContext");
+                .expect("Failed to wait for idle device when destroying DlssSuperResolution");
 
             check_ngx_result(NVSDK_NGX_VULKAN_ReleaseFeature(self.feature))
-                .expect("Failed to destroy DlssContext feature");
+                .expect("Failed to destroy DlssSuperResolution feature");
         }
     }
 }
 
-unsafe impl Send for DlssContext {}
-unsafe impl Sync for DlssContext {}
+unsafe impl Send for DlssSuperResolution {}
+unsafe impl Sync for DlssSuperResolution {}
 
-fn halton_sequence(mut index: u32, base: u32) -> f32 {
-    let mut f = 1.0;
-    let mut result = 0.0;
-    while index > 0 {
-        f /= base as f32;
-        result += f * (index % base) as f32;
-        index = (index as f32 / base as f32).floor() as u32;
+/// Inputs and output resources needed for rendering [`DlssSuperResolution`].
+pub struct DlssSuperResolutionRenderParameters<'a> {
+    /// Main color view of your camera.
+    pub color: &'a TextureView,
+    /// Depth buffer.
+    pub depth: &'a TextureView,
+    /// Motion vectors.
+    pub motion_vectors: &'a TextureView,
+    /// Camera exposure settings.
+    pub exposure: DlssSuperResolutionExposure<'a>,
+    /// Optional per-pixel bias to make DLSS more reactive.
+    pub bias: Option<&'a TextureView>,
+    /// The texture DLSS outputs to.
+    pub dlss_output: &'a TextureView,
+    /// Whether DLSS should reset temporal history, useful for camera cuts.
+    pub reset: bool,
+    /// Subpixel jitter that was applied to your camera.
+    pub jitter_offset: Vec2,
+    /// Optionally use only a specific subrect of the input textures, rather than the whole textures.
+    // TODO: Allow configuring partial texture origins
+    pub partial_texture_size: Option<UVec2>,
+    /// Optional scaling factor to apply to the values contained within [`Self::motion_vectors`].
+    pub motion_vector_scale: Option<Vec2>,
+}
+
+/// Camera exposure as input for [`DlssSuperResolution`]..
+pub enum DlssSuperResolutionExposure<'a> {
+    /// Exposure controlled by the application.
+    Manual {
+        exposure: &'a TextureView,
+        exposure_scale: Option<f32>,
+        pre_exposure: Option<f32>,
+    },
+    /// Auto-exposure handled by DLSS.
+    Automatic,
+}
+
+impl<'a> DlssSuperResolutionRenderParameters<'a> {
+    fn validate(&self) -> Result<(), DlssError> {
+        // TODO
+        Ok(())
     }
-    result
+
+    fn barrier_list(&self) -> impl Iterator<Item = TextureTransition<&'a Texture>> {
+        fn resource_barrier<'a>(texture_view: &'a TextureView) -> TextureTransition<&'a Texture> {
+            TextureTransition {
+                texture: texture_view.texture(),
+                selector: None,
+                state: TextureUses::RESOURCE,
+            }
+        }
+
+        [
+            Some(resource_barrier(&self.color)),
+            Some(resource_barrier(&self.depth)),
+            Some(resource_barrier(&self.motion_vectors)),
+            match &self.exposure {
+                DlssSuperResolutionExposure::Manual { exposure, .. } => {
+                    Some(resource_barrier(exposure))
+                }
+                DlssSuperResolutionExposure::Automatic => None,
+            },
+            self.bias.map(resource_barrier),
+            Some(TextureTransition {
+                texture: self.dlss_output.texture(),
+                selector: None,
+                state: TextureUses::STORAGE_READ_WRITE,
+            }),
+        ]
+        .into_iter()
+        .flatten()
+    }
 }
