@@ -1,4 +1,7 @@
-use crate::{DlssExposure, DlssRenderParameters, DlssSdk, nvsdk_ngx::*};
+use crate::{
+    DlssExposure, DlssRenderParameters, DlssSdk, nvsdk_ngx::*,
+    render_parameters::texture_to_ngx_resource,
+};
 use glam::{UVec2, Vec2};
 use std::{
     iter,
@@ -122,7 +125,7 @@ impl DlssContext {
                 exposure_scale,
                 pre_exposure,
             } => (
-                &mut exposure.as_resource(adapter) as *mut _,
+                &mut texture_to_ngx_resource(exposure, adapter) as *mut _,
                 exposure_scale.unwrap_or(1.0),
                 pre_exposure.unwrap_or(0.0),
             ),
@@ -131,12 +134,16 @@ impl DlssContext {
 
         let mut dlss_eval_params = NVSDK_NGX_VK_DLSS_Eval_Params {
             Feature: NVSDK_NGX_VK_Feature_Eval_Params {
-                pInColor: &mut render_parameters.color.as_resource(adapter),
-                pInOutput: &mut render_parameters.dlss_output.as_resource(adapter),
+                pInColor: &mut texture_to_ngx_resource(render_parameters.color, adapter) as *mut _,
+                pInOutput: &mut texture_to_ngx_resource(render_parameters.dlss_output, adapter)
+                    as *mut _,
                 InSharpness: 0.0,
             },
-            pInDepth: &mut render_parameters.depth.as_resource(adapter),
-            pInMotionVectors: &mut render_parameters.motion_vectors.as_resource(adapter),
+            pInDepth: &mut texture_to_ngx_resource(render_parameters.depth, adapter) as *mut _,
+            pInMotionVectors: &mut texture_to_ngx_resource(
+                render_parameters.motion_vectors,
+                adapter,
+            ) as *mut _,
             InJitterOffsetX: render_parameters.jitter_offset.x,
             InJitterOffsetY: render_parameters.jitter_offset.y,
             InRenderSubrectDimensions: NVSDK_NGX_Dimensions {
@@ -149,7 +156,7 @@ impl DlssContext {
             pInTransparencyMask: ptr::null_mut(),
             pInExposureTexture: exposure,
             pInBiasCurrentColorMask: match &render_parameters.bias {
-                Some(bias) => &mut bias.as_resource(adapter),
+                Some(bias) => &mut texture_to_ngx_resource(bias, adapter) as *mut _,
                 None => ptr::null_mut(),
             },
             InColorSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
@@ -225,16 +232,14 @@ impl DlssContext {
 impl Drop for DlssContext {
     fn drop(&mut self) {
         unsafe {
-            self.device.as_hal::<Vulkan, _, _>(|device| {
-                device
-                    .unwrap()
-                    .raw_device()
-                    .device_wait_idle()
-                    .expect("Failed to wait for idle device when destroying DlssContext");
+            let hal_device = self.device.as_hal::<Vulkan>().unwrap();
+            hal_device
+                .raw_device()
+                .device_wait_idle()
+                .expect("Failed to wait for idle device when destroying DlssContext");
 
-                check_ngx_result(NVSDK_NGX_VULKAN_ReleaseFeature(self.feature))
-                    .expect("Failed to destroy DlssContext feature");
-            });
+            check_ngx_result(NVSDK_NGX_VULKAN_ReleaseFeature(self.feature))
+                .expect("Failed to destroy DlssContext feature");
         }
     }
 }

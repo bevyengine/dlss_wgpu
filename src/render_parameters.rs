@@ -13,17 +13,17 @@ use wgpu::{
 /// Inputs and output resources needed for rendering DLSS.
 pub struct DlssRenderParameters<'a> {
     /// Main color view of your camera.
-    pub color: DlssTexture<'a>,
+    pub color: &'a TextureView,
     /// Depth buffer.
-    pub depth: DlssTexture<'a>,
+    pub depth: &'a TextureView,
     // Motion vectors.
-    pub motion_vectors: DlssTexture<'a>,
+    pub motion_vectors: &'a TextureView,
     /// Camera exposure settings.
     pub exposure: DlssExposure<'a>,
     /// Optional per-pixel bias to make DLSS more reactive.
-    pub bias: Option<DlssTexture<'a>>,
+    pub bias: Option<&'a TextureView>,
     /// The texture DLSS outputs to.
-    pub dlss_output: DlssTexture<'a>,
+    pub dlss_output: &'a TextureView,
     /// Whether DLSS should reset temporal history, useful for camera cuts.
     pub reset: bool,
     /// Subpixel jitter that was applied to your camera.
@@ -42,9 +42,9 @@ impl<'a> DlssRenderParameters<'a> {
     }
 
     pub(crate) fn barrier_list(&self) -> impl Iterator<Item = TextureTransition<&'a Texture>> {
-        fn resource_barrier<'a>(texture: &DlssTexture<'a>) -> TextureTransition<&'a Texture> {
+        fn resource_barrier<'a>(texture_view: &'a TextureView) -> TextureTransition<&'a Texture> {
             TextureTransition {
-                texture: texture.texture,
+                texture: texture_view.texture(),
                 selector: None,
                 state: TextureUses::RESOURCE,
             }
@@ -58,9 +58,9 @@ impl<'a> DlssRenderParameters<'a> {
                 DlssExposure::Manual { exposure, .. } => Some(resource_barrier(exposure)),
                 DlssExposure::Automatic => None,
             },
-            self.bias.as_ref().map(resource_barrier),
+            self.bias.map(resource_barrier),
             Some(TextureTransition {
-                texture: self.dlss_output.texture,
+                texture: self.dlss_output.texture(),
                 selector: None,
                 state: TextureUses::STORAGE_READ_WRITE,
             }),
@@ -74,7 +74,7 @@ impl<'a> DlssRenderParameters<'a> {
 pub enum DlssExposure<'a> {
     /// Exposure controlled by the application.
     Manual {
-        exposure: DlssTexture<'a>,
+        exposure: &'a TextureView,
         exposure_scale: Option<f32>,
         pre_exposure: Option<f32>,
     },
@@ -82,42 +82,35 @@ pub enum DlssExposure<'a> {
     Automatic,
 }
 
-/// Wrapper for a texture(view) used by [`DlssRenderParameters`].
-pub struct DlssTexture<'a> {
-    pub texture: &'a Texture,
-    pub view: &'a TextureView,
-}
+pub(crate) fn texture_to_ngx_resource(
+    texture_view: &TextureView,
+    adapter: &Adapter,
+) -> NVSDK_NGX_Resource_VK {
+    unsafe {
+        let raw_view = texture_view.as_hal::<Vulkan>().unwrap().raw_handle();
+        let texture = texture_view.texture();
 
-impl<'a> DlssTexture<'a> {
-    pub(crate) fn as_resource(&self, adapter: &Adapter) -> NVSDK_NGX_Resource_VK {
-        unsafe {
-            NVSDK_NGX_Create_ImageView_Resource_VK(
-                self.view
-                    .as_hal::<Vulkan, _, _>(|v| v.unwrap().raw_handle()),
-                self.texture
-                    .as_hal::<Vulkan, _, _>(|t| t.unwrap().raw_handle()),
-                ImageSubresourceRange {
-                    aspect_mask: if self.texture.format().has_color_aspect() {
-                        ImageAspectFlags::COLOR
-                    } else {
-                        ImageAspectFlags::DEPTH
-                    },
-                    base_mip_level: 0,
-                    level_count: REMAINING_MIP_LEVELS,
-                    base_array_layer: 0,
-                    layer_count: REMAINING_ARRAY_LAYERS,
+        NVSDK_NGX_Create_ImageView_Resource_VK(
+            raw_view,
+            texture.as_hal::<Vulkan>().unwrap().raw_handle(),
+            ImageSubresourceRange {
+                aspect_mask: if texture.format().has_color_aspect() {
+                    ImageAspectFlags::COLOR
+                } else {
+                    ImageAspectFlags::DEPTH
                 },
-                adapter.as_hal::<Vulkan, _, _>(|adapter| {
-                    adapter
-                        .unwrap()
-                        .texture_format_as_raw(self.texture.format())
-                }),
-                self.texture.width(),
-                self.texture.height(),
-                self.texture
-                    .usage()
-                    .contains(TextureUsages::STORAGE_BINDING),
-            )
-        }
+                base_mip_level: 0,
+                level_count: REMAINING_MIP_LEVELS,
+                base_array_layer: 0,
+                layer_count: REMAINING_ARRAY_LAYERS,
+            },
+            adapter
+                .as_hal::<Vulkan>()
+                .unwrap()
+                .texture_format_as_raw(texture.format()),
+            texture.width(),
+            texture.height(),
+            texture.usage().contains(TextureUsages::STORAGE_BINDING),
+        )
     }
 }

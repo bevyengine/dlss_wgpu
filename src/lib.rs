@@ -14,15 +14,15 @@
 //! use dlss_wgpu::{DlssSdk, DlssContext, DlssPerfQualityMode, DlssFeatureFlags, DlssRenderParameters};
 //!
 //! let project_id = Uuid::parse_str("...").unwrap();
+//! let mut dlss_supported = true;
 //!
-//! // Request a wgpu device and queue
-//! let ((device, queue), dlss_supported) = {
-//!     match dlss_wgpu::request_device(project_id, &adapter, &device_descriptor) {
-//!         Ok(x) => (x, true),
-//!         // Fallback to standard device request if DLSS is not supported
-//!         Err(_) => (adapter.request_device(&device_descriptor).await.unwrap(), false),
-//!     }
-//! };
+//! // Initialize wgpu
+//! let instance = dlss_wgpu::create_instance(project_id, &instance_descriptor, &mut dlss_supported).unwrap();
+//! let adapter = instance.request_adapter(&adapter_options).await.unwrap();
+//! let (device, queue) = dlss_wgpu::request_device(project_id, &adapter, &device_descriptor, &mut dlss_supported).unwrap();
+//!
+//! // Check `dlss_supported`, if false don't create DLSS resources
+//! println!("DLSS supported: {dlss_supported}");
 //!
 //! // Create the SDK once per application
 //! let sdk = DlssSdk::new(project_id, device).expect("Failed to create DLSS SDK");
@@ -51,13 +51,13 @@
 
 mod context;
 mod feature_info;
+mod initialization;
 mod nvsdk_ngx;
 mod render_parameters;
-mod request_device;
 mod sdk;
 
 pub use context::DlssContext;
+pub use initialization::{InitializationError, create_instance, request_device};
 pub use nvsdk_ngx::{DlssError, DlssFeatureFlags, DlssPerfQualityMode};
-pub use render_parameters::{DlssExposure, DlssRenderParameters, DlssTexture};
-pub use request_device::{RequestDeviceError, request_device};
+pub use render_parameters::{DlssExposure, DlssRenderParameters};
 pub use sdk::DlssSdk;
