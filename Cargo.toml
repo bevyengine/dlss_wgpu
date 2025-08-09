@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 wgpu = { version = "26", default-features = false, features = ["vulkan"] }
 ash = "0.38"
-glam = "0.29"
+glam = "0.30"
 uuid = "1"
 bitflags = "2"
 thiserror = "2"
