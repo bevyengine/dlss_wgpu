@@ -50,16 +50,25 @@
 //!     .expect("Failed to render DLSS");
 //! ```
 
+#[cfg(not(feature = "mock"))]
 mod feature_info;
+#[cfg(not(feature = "mock"))]
 mod initialization;
+#[cfg(not(feature = "mock"))]
 mod nvsdk_ngx;
+#[cfg(not(feature = "mock"))]
 mod sdk;
 
 /// DLSS Ray Reconstruction.
+#[cfg(not(feature = "mock"))]
 pub mod ray_reconstruction;
 /// DLSS Super Resolution.
+#[cfg(not(feature = "mock"))]
 pub mod super_resolution;
 
+#[cfg(not(feature = "mock"))]
 pub use initialization::{FeatureSupport, InitializationError, create_instance, request_device};
+#[cfg(not(feature = "mock"))]
 pub use nvsdk_ngx::{DlssError, DlssFeatureFlags, DlssPerfQualityMode};
+#[cfg(not(feature = "mock"))]
 pub use sdk::DlssSdk;

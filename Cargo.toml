@@ -17,3 +17,4 @@ cc = "1"
 
 [features]
 debug_overlay = []
+mock = []
