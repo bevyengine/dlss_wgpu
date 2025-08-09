@@ -1,6 +1,10 @@
 use std::{env, path::PathBuf};
 
 fn main() {
+    if cfg!(feature = "mock") {
+        return;
+    }
+
     // Get SDK paths
     let dlss_sdk = env::var("DLSS_SDK")
         .expect("DLSS_SDK environment variable not set. Consult the dlss_wgpu readme.");
