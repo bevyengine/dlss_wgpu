@@ -35,3 +35,8 @@ Once your app is compiled, you do not need to distribute the entire DLSS SDK, or
 When `dlss_wgpu` is compiled with the `debug_overlay` cargo feature, and the `DLSS_SDK` environment variable is set, the development version of the DLSS DLLs will be linked.
 
 The development version of the DLSS SDK comes with an in-app overlay to help debug usage of DLSS. See section `8.2` of `$DLSS_SDK/doc/DLSS_Programming_Guide_Release.pdf` for details.
+
+## Validation Errors
+Due to a bug in DLSS, you should expect to see Vulkan validation errors https://forums.developer.nvidia.com/t/validation-errors-using-dlss-vulkan-sdk-due-to-vkcmdclearcolorimage/326493.
+
+These errors are safe to ignore.
