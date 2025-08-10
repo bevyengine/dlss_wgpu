@@ -274,7 +274,7 @@ impl DlssRayReconstruction {
                 DlssRayReconstructionSpecularGuide::SpecularMotionVectors(
                     specular_motion_vectors,
                 ) => &mut texture_to_ngx(specular_motion_vectors, adapter) as *mut _,
-                DlssRayReconstructionSpecularGuide::SpecularHitDistance => ptr::null_mut(),
+                DlssRayReconstructionSpecularGuide::SpecularHitDistance { .. } => ptr::null_mut(),
             },
             pInTransparencyLayer: ptr::null_mut(),
             InTransparencyLayerSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
