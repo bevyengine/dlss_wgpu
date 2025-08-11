@@ -1,15 +1,37 @@
 use std::{env, path::PathBuf};
 
-fn main() {
-    if cfg!(feature = "mock") {
-        return;
-    }
+enum EnvError {
+    MissingDlssSdk,
+    MissingVulkanSdk,
+    MissingOutDir,
+}
 
-    // Get SDK paths
-    let dlss_sdk = env::var("DLSS_SDK")
-        .expect("DLSS_SDK environment variable not set. Consult the dlss_wgpu readme.");
-    let vulkan_sdk = env::var("VULKAN_SDK").expect("VULKAN_SDK environment variable not set");
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+impl std::fmt::Display for EnvError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EnvError::MissingDlssSdk => write!(f, "DLSS_SDK environment variable is not set"),
+            EnvError::MissingVulkanSdk => write!(f, "VULKAN_SDK environment variable is not set"),
+            EnvError::MissingOutDir => write!(f, "OUT_DIR environment variable is not set"),
+        }
+    }
+}
+
+fn main() {
+    println!("cargo::rustc-check-cfg=cfg(dlss, values(\"mock\"))");
+    let (dlss_sdk, vulkan_sdk, out_dir) = match (|| {
+        // Get SDK paths
+        let dlss_sdk = env::var("DLSS_SDK").map_err(|_| EnvError::MissingDlssSdk)?;
+        let vulkan_sdk = env::var("VULKAN_SDK").map_err(|_| EnvError::MissingVulkanSdk)?;
+        let out_dir = PathBuf::from(env::var("OUT_DIR").map_err(|_| EnvError::MissingOutDir)?);
+        Result::<_, EnvError>::Ok((dlss_sdk, vulkan_sdk, out_dir))
+    })() {
+        Ok(env) => env,
+        Err(err) => {
+            println!("cargo::rustc-cfg=dlss=\"mock\"");
+            println!("cargo::warning={}", err);
+            return;
+        }
+    };
 
     // Link to needed libraries
     #[cfg(not(target_os = "windows"))]
