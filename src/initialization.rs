@@ -112,6 +112,7 @@ pub fn register_device_extensions(
     let raw_instance = raw_adapter.shared_instance().raw_instance();
     let raw_physical_device = raw_adapter.raw_physical_device();
     let mut result = Ok(());
+
     match required_device_extensions(
         project_id,
         NVSDK_NGX_Feature_NVSDK_NGX_Feature_SuperSampling,
@@ -123,6 +124,7 @@ pub fn register_device_extensions(
         Ok((_, false)) => feature_support.super_resolution_supported = false,
         Err(err) => result = Err(err),
     };
+
     match required_device_extensions(
         project_id,
         NVSDK_NGX_Feature_NVSDK_NGX_Feature_RayReconstruction,
@@ -238,7 +240,7 @@ pub enum InitializationError {
     UnsupportedBackend,
 }
 
-/// Error returned by [`request_device`].
+/// Error returned by [`register_instance_extensions`].
 #[derive(thiserror::Error, Debug)]
 pub enum RegisterInstanceExtensionsError {
     #[error(transparent)]
