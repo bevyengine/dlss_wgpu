@@ -67,7 +67,10 @@ pub mod ray_reconstruction;
 pub mod super_resolution;
 
 #[cfg(not(feature = "mock"))]
-pub use initialization::{FeatureSupport, InitializationError, create_instance, request_device};
+pub use initialization::{
+    FeatureSupport, InitializationError, create_instance, register_device_extensions,
+    register_instance_extensions, request_device,
+};
 #[cfg(not(feature = "mock"))]
 pub use nvsdk_ngx::{DlssError, DlssFeatureFlags, DlssPerfQualityMode};
 #[cfg(not(feature = "mock"))]
