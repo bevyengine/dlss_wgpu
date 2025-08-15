@@ -2,6 +2,11 @@
 name = "dlss_wgpu"
 version = "1.0.0"
 edition = "2024"
+categories = ["graphics", "rendering"]
+description = "Adds support for using DLSS with wgpu"
+repository = "https://github.com/bevyengine/dlss_wgpu"
+documentation = "https://docs.rs/dlss_wgpu"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 wgpu = { version = "26", default-features = false, features = ["vulkan"] }
