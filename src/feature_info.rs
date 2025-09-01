@@ -1,6 +1,6 @@
 use crate::nvsdk_ngx::*;
 use std::{
-    env,
+    env::{self, var},
     ffi::{CString, OsStr, OsString},
     ptr,
 };
@@ -69,8 +69,8 @@ fn get_shared_library_paths() -> Vec<Vec<wchar_t>> {
     let profile = "rel";
 
     // Look in $DLSS_SDK if set
-    let sdk_path = option_env!("DLSS_SDK").map(|sdk| format!("{sdk}/lib/{platform}/{profile}"));
-    if let Some(sdk_path) = sdk_path.as_ref() {
+    let sdk_path = var("DLSS_SDK").map(|sdk| format!("{sdk}/lib/{platform}/{profile}"));
+    if let Ok(sdk_path) = sdk_path.as_ref() {
         shared_library_paths.push(os_str_to_wchar(&OsString::from(sdk_path)));
     }
 
