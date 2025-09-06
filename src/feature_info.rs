@@ -1,6 +1,6 @@
 use crate::nvsdk_ngx::*;
 use std::{
-    env::{self, current_exe, var},
+    env::{self, var},
     ffi::{CString, OsStr, OsString},
     ptr,
 };
@@ -56,12 +56,6 @@ where
 
 fn get_shared_library_paths() -> Vec<Vec<wchar_t>> {
     let mut shared_library_paths = vec![];
-
-    // Look in current direction
-    if let Ok(binary_path) = current_exe() {
-        let current_directory = binary_path.parent().unwrap();
-        shared_library_paths.push(os_str_to_wchar(current_directory.as_os_str()));
-    }
 
     #[cfg(not(target_os = "windows"))]
     let platform = "Linux_x86_64";
