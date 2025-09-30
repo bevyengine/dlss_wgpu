@@ -3,7 +3,7 @@
 //! This crate provides Rust bindings for integrating NVIDIA DLSS (Deep Learning Super Sampling) with the `wgpu` graphics API.
 //!
 //! ## Setup
-//! See <https://github.com/JMS55/dlss_wgpu/blob/main/README.md> for setup instructions.
+//! See <https://github.com/bevyengine/dlss_wgpu/blob/main/README.md> for setup instructions.
 //!
 //! This crate only works with wgpu's Vulkan backend. Other backends are not supported.
 //!
