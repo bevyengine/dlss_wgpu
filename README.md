@@ -6,7 +6,7 @@ A wrapper for using [DLSS](https://www.nvidia.com/en-us/geforce/technologies/dls
 
 | dlss_wgpu |   dlss   | wgpu  |
 | :-------: | :------: | :---: |
-|  v1.1.0   | v310.4.0 |  v27  |
+|  v2.0.0   | v310.4.0 |  v27  |
 |  v1.0.1   | v310.4.0 |  v26  |
 |  v1.0.0   | v310.3.0 |  v26  |
 
