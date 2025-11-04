@@ -1,4 +1,4 @@
-# v1.1.0
+# v2.0.0
 * Upgrade to wgpu 27
 
 # v1.0.1
