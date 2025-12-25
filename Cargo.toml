@@ -9,7 +9,7 @@ documentation = "https://docs.rs/dlss_wgpu"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-wgpu = { version = "27", default-features = false, features = ["vulkan"] }
+wgpu = { version = "28", default-features = false, features = ["vulkan"] }
 ash = "0.38"
 glam = "0.30"
 uuid = "1"
