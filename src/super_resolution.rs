@@ -7,8 +7,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 use wgpu::{
-    Adapter, CommandEncoder, CommandEncoderDescriptor, Device, Queue, Texture, TextureTransition,
-    TextureUses, TextureView, hal::api::Vulkan,
+    Adapter, CommandBuffer, CommandEncoder, CommandEncoderDescriptor, Device, Queue, Texture,
+    TextureTransition, TextureUses, TextureView, hal::api::Vulkan,
 };
 
 /// Camera-specific object for using DLSS Super Resolution.
@@ -107,12 +107,21 @@ impl DlssSuperResolution {
     }
 
     /// Encode rendering commands for DLSS Super Resolution.
+    ///
+    /// The resulting command buffer should be submitted to a [`Queue`] in the same submit as the finished `command_encoder`, ordered immediately afterwards.
+    /// ```rust
+    /// let mut my_command_encoder = device.create_command_encoder(descriptor);
+    /// let dlss_command_buffer = dlss.render(render_parameters, &mut my_command_encoder, adapter).unwrap();
+    /// queue.submit([my_command_encoder.finish(), dlss_command_buffer]);
+    /// ```
+    ///
+    /// Failing to follow these rules is undefined behavior.
     pub fn render(
         &mut self,
         render_parameters: DlssSuperResolutionRenderParameters,
         command_encoder: &mut CommandEncoder,
         adapter: &Adapter,
-    ) -> Result<(), DlssError> {
+    ) -> Result<CommandBuffer, DlssError> {
         render_parameters.validate()?;
 
         let sdk = self.sdk.lock().unwrap();
@@ -183,6 +192,10 @@ impl DlssSuperResolution {
         };
 
         command_encoder.transition_resources(iter::empty(), render_parameters.barrier_list());
+
+        let mut dlss_command_encoder = device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("dlss_super_resolution"),
+        });
         unsafe {
             command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
                 check_ngx_result(NGX_VULKAN_EVALUATE_DLSS_EXT(
@@ -193,6 +206,7 @@ impl DlssSuperResolution {
                 ))
             })
         }
+        Ok(dlss_command_encoder.finish())
     }
 
     /// Suggested subpixel camera jitter for a given frame.

@@ -27,7 +27,7 @@ pub fn create_instance(
                 flags: instance_descriptor.flags,
                 memory_budget_thresholds: instance_descriptor.memory_budget_thresholds,
                 backend_options: instance_descriptor.backend_options.clone(),
-                telemetry: None
+                telemetry: None,
             },
             Some(Box::new(|mut args| {
                 result = register_instance_extensions(project_id, &mut args, feature_support);

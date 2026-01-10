@@ -6,6 +6,7 @@ A wrapper for using [DLSS](https://www.nvidia.com/en-us/geforce/technologies/dls
 
 | dlss_wgpu |   dlss   | wgpu  |
 | :-------: | :------: | :---: |
+|  v3.0.0   | v310.5.0 |  v28  |
 |  v2.0.0   | v310.4.0 |  v27  |
 |  v1.0.1   | v310.4.0 |  v26  |
 |  v1.0.0   | v310.3.0 |  v26  |
@@ -14,8 +15,8 @@ A wrapper for using [DLSS](https://www.nvidia.com/en-us/geforce/technologies/dls
 
 The DLSS SDK cannot be redistributed by this crate. You will need to download the SDK as follows:
 
-* Ensure you comply with the [DLSS SDK license](https://github.com/NVIDIA/DLSS/blob/v310.4.0/LICENSE.txt)
-* Clone the [NVIDIA DLSS Super Resolution SDK v310.4.0](https://github.com/NVIDIA/DLSS/tree/v310.4.0)
+* Ensure you comply with the [DLSS SDK license](https://github.com/NVIDIA/DLSS/blob/v310.5.0/LICENSE.txt)
+* Clone the [NVIDIA DLSS Super Resolution SDK v310.5.0](https://github.com/NVIDIA/DLSS/tree/v310.5.0)
 * Set the environment variable `DLSS_SDK = /path/to/DLSS`
 
 ## Build Dependencies
@@ -30,11 +31,11 @@ Once your app is compiled, you do not need to distribute the entire DLSS SDK, or
 
 1. Copy the DLL:
     * Windows: Copy `$DLSS_SDK/lib/Windows_x86_64/rel/nvngx_dlss.dll` to the same directory as your app
-    * Linux: Copy `$DLSS_SDK/lib/Linux_x86_64/rel/libnvidia-ngx-dlss.so.310.4.0` to the same directory as your app
+    * Linux: Copy `$DLSS_SDK/lib/Linux_x86_64/rel/libnvidia-ngx-dlss.so.310.5.0` to the same directory as your app
 2. Include the full copyright and license blurb texts from section `9.5` of `$DLSS_SDK/doc/DLSS_Programming_Guide_Release.pdf` with your app
 3. Additionally, for DLSS ray reconstruction:
     * Windows: Copy `$DLSS_SDK/lib/Windows_x86_64/rel/nvngx_dlssd.dll` to the same directory as your app
-    * Linux: Copy `$DLSS_SDK/lib/Linux_x86_64/rel/libnvidia-ngx-dlssd.so.310.4.0` to the same directory as your app
+    * Linux: Copy `$DLSS_SDK/lib/Linux_x86_64/rel/libnvidia-ngx-dlssd.so.310.5.0` to the same directory as your app
 
 ## Debug Overlay
 

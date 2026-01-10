@@ -46,8 +46,11 @@
 //!
 //! // Encode DLSS render commands
 //! let render_parameters = DlssSuperResolutionRenderParameters { ... };
-//! context.render(render_parameters, &mut command_encoder, &adapter)
+//! let dlss_command_buffer = context.render(render_parameters, &mut command_encoder, &adapter)
 //!     .expect("Failed to render DLSS");
+//!
+//! // Submit render commands
+//! queue.submit([command_encoder.finsh(), dlss_command_buffer]);
 //! ```
 
 #[cfg(not(feature = "mock"))]
