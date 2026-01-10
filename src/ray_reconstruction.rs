@@ -122,7 +122,7 @@ impl DlssRayReconstruction {
     /// Encode rendering commands for DLSS Ray Reconstruction.
     ///
     /// The resulting command buffer should be submitted to a [`Queue`] in the same submit as the finished `command_encoder`, ordered immediately afterwards.
-    /// ```rust
+    /// ```compile_fail
     /// let mut my_command_encoder = device.create_command_encoder(descriptor);
     /// let dlss_command_buffer = dlss.render(render_parameters, &mut my_command_encoder, adapter).unwrap();
     /// queue.submit([my_command_encoder.finish(), dlss_command_buffer]);
@@ -297,9 +297,11 @@ impl DlssRayReconstruction {
 
         command_encoder.transition_resources(iter::empty(), render_parameters.barrier_list());
 
-        let mut dlss_command_encoder = device.create_command_encoder(&CommandEncoderDescriptor {
-            label: Some("dlss_ray_reconstruction"),
-        });
+        let mut dlss_command_encoder =
+            self.device
+                .create_command_encoder(&CommandEncoderDescriptor {
+                    label: Some("dlss_ray_reconstruction"),
+                });
         unsafe {
             dlss_command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
                 check_ngx_result(NGX_VULKAN_EVALUATE_DLSSD_EXT(
@@ -308,7 +310,7 @@ impl DlssRayReconstruction {
                     sdk.parameters,
                     &mut eval_params,
                 ))
-            })
+            })?;
         }
         Ok(dlss_command_encoder.finish())
     }

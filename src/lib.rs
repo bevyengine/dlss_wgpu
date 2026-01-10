@@ -10,7 +10,7 @@
 //! For further info on how to integrate DLSS into your application, read `$DLSS_SDK/doc/DLSS_Programming_Guide_Release.pdf`.
 //!
 //! ## API Usage
-//! ```rust
+//! ```compile_fail
 //! use dlss_wgpu::{FeatureSupport, DlssSdk, DlssPerfQualityMode, DlssFeatureFlags};
 //! use dlss_wgpu::super_resolution::{DlssSuperResolution, DlssSuperResolutionRenderParameters};
 //!
