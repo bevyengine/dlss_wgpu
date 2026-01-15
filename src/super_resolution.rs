@@ -193,11 +193,11 @@ impl DlssSuperResolution {
 
         command_encoder.transition_resources(iter::empty(), render_parameters.barrier_list());
 
-        let dlss_command_encoder = self
-            .device
-            .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("dlss_super_resolution"),
-            });
+        let mut dlss_command_encoder =
+            self.device
+                .create_command_encoder(&CommandEncoderDescriptor {
+                    label: Some("dlss_super_resolution"),
+                });
         unsafe {
             dlss_command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
                 check_ngx_result(NGX_VULKAN_EVALUATE_DLSS_EXT(
