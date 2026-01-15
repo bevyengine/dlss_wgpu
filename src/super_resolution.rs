@@ -199,7 +199,7 @@ impl DlssSuperResolution {
                 label: Some("dlss_super_resolution"),
             });
         unsafe {
-            command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
+            dlss_command_encoder.as_hal_mut::<Vulkan, _, _>(|command_encoder| {
                 check_ngx_result(NGX_VULKAN_EVALUATE_DLSS_EXT(
                     command_encoder.unwrap().raw_handle(),
                     self.feature,
