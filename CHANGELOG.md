@@ -1,3 +1,8 @@
+# v3.0.0
+* Upgrade to wgpu 28
+* Bump DLSS SDK to v310.5.0
+* DlssSuperResolution::render and DlssRayReconstruction::render now return a CommandBuffer that you must submit to a queue in a specific way. Read the documentation for more info.
+
 # v2.0.0
 * Upgrade to wgpu 27
 
