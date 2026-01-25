@@ -11,7 +11,6 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 wgpu = { version = "28", default-features = false, features = ["vulkan"] }
 ash = "0.38"
-glam = "0.31"
 uuid = "1"
 bitflags = "2"
 thiserror = "2"

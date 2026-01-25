@@ -22,7 +22,6 @@ type VkPhysicalDevice = ash::vk::PhysicalDevice;
 use ash::vk::{
     ImageAspectFlags, ImageSubresourceRange, REMAINING_ARRAY_LAYERS, REMAINING_MIP_LEVELS,
 };
-use glam::UVec2;
 use wgpu::{Adapter, TextureUsages, TextureView, wgc::api::Vulkan};
 
 /// How much DLSS should upscale by.
@@ -42,12 +41,12 @@ pub enum DlssPerfQualityMode {
 impl DlssPerfQualityMode {
     pub(crate) fn as_perf_quality_value(
         &self,
-        upscaled_resolution: UVec2,
+        upscaled_resolution: [u32; 2],
     ) -> NVSDK_NGX_PerfQuality_Value {
         match self {
             Self::Auto => {
                 let mega_pixels =
-                    (upscaled_resolution.x * upscaled_resolution.y) as f32 / 1_000_000.0;
+                    (upscaled_resolution[0] * upscaled_resolution[1]) as f32 / 1_000_000.0;
 
                 if mega_pixels < 2.03 {
                     NVSDK_NGX_PerfQuality_Value_NVSDK_NGX_PerfQuality_Value_DLAA

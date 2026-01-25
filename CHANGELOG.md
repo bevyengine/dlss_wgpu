@@ -1,4 +1,5 @@
 # Unreleased
+* Remove glam dependency
 * Update glam to 0.31
 
 # v3.0.0
