@@ -1,3 +1,6 @@
+# Unreleased
+* Update glam to 0.31
+
 # v3.0.0
 * Upgrade to wgpu 28
 * Bump DLSS SDK to v310.5.0
