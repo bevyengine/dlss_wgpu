@@ -1,5 +1,5 @@
 # Unreleased
-* Update glam to 0.31
+* Remove glam dependency
 
 # v3.0.0
 * Upgrade to wgpu 28

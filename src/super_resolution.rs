@@ -1,5 +1,4 @@
 use crate::{DlssSdk, nvsdk_ngx::*};
-use glam::{UVec2, Vec2};
 use std::{
     iter,
     ops::RangeInclusive,
@@ -13,9 +12,9 @@ use wgpu::{
 
 /// Camera-specific object for using DLSS Super Resolution.
 pub struct DlssSuperResolution {
-    upscaled_resolution: UVec2,
-    min_render_resolution: UVec2,
-    max_render_resolution: UVec2,
+    upscaled_resolution: [u32; 2],
+    min_render_resolution: [u32; 2],
+    max_render_resolution: [u32; 2],
     device: Device,
     sdk: Arc<Mutex<DlssSdk>>,
     feature: *mut NVSDK_NGX_Handle,
@@ -28,7 +27,7 @@ impl DlssSuperResolution {
     ///
     /// This should only be called if [`crate::FeatureSupport::super_resolution_supported`] is true.
     pub fn new(
-        upscaled_resolution: UVec2,
+        upscaled_resolution: [u32; 2],
         perf_quality_mode: DlssPerfQualityMode,
         feature_flags: DlssFeatureFlags,
         sdk: Arc<Mutex<DlssSdk>>,
@@ -39,22 +38,22 @@ impl DlssSuperResolution {
 
         let perf_quality_value = perf_quality_mode.as_perf_quality_value(upscaled_resolution);
 
-        let mut optimal_render_resolution = UVec2::ZERO;
-        let mut min_render_resolution = UVec2::ZERO;
-        let mut max_render_resolution = UVec2::ZERO;
+        let mut optimal_render_resolution = [0, 0];
+        let mut min_render_resolution = [0, 0];
+        let mut max_render_resolution = [0, 0];
         unsafe {
             let mut deprecated_sharpness = 0.0f32;
             check_ngx_result(NGX_DLSS_GET_OPTIMAL_SETTINGS(
                 locked_sdk.parameters,
-                upscaled_resolution.x,
-                upscaled_resolution.y,
+                upscaled_resolution[0],
+                upscaled_resolution[1],
                 perf_quality_value,
-                &mut optimal_render_resolution.x,
-                &mut optimal_render_resolution.y,
-                &mut max_render_resolution.x,
-                &mut max_render_resolution.y,
-                &mut min_render_resolution.x,
-                &mut min_render_resolution.y,
+                &mut optimal_render_resolution[0],
+                &mut optimal_render_resolution[1],
+                &mut max_render_resolution[0],
+                &mut max_render_resolution[1],
+                &mut min_render_resolution[0],
+                &mut min_render_resolution[1],
                 &mut deprecated_sharpness,
             ))?;
         }
@@ -66,10 +65,10 @@ impl DlssSuperResolution {
 
         let mut create_params = NVSDK_NGX_DLSS_Create_Params {
             Feature: NVSDK_NGX_Feature_Create_Params {
-                InWidth: optimal_render_resolution.x,
-                InHeight: optimal_render_resolution.y,
-                InTargetWidth: upscaled_resolution.x,
-                InTargetHeight: upscaled_resolution.y,
+                InWidth: optimal_render_resolution[0],
+                InHeight: optimal_render_resolution[1],
+                InTargetWidth: upscaled_resolution[0],
+                InTargetHeight: upscaled_resolution[1],
                 InPerfQualityValue: perf_quality_value,
             },
             InFeatureCreateFlags: feature_flags.as_flags(),
@@ -152,15 +151,15 @@ impl DlssSuperResolution {
             pInDepth: &mut texture_to_ngx(render_parameters.depth, adapter) as *mut _,
             pInMotionVectors: &mut texture_to_ngx(render_parameters.motion_vectors, adapter)
                 as *mut _,
-            InJitterOffsetX: render_parameters.jitter_offset.x,
-            InJitterOffsetY: render_parameters.jitter_offset.y,
+            InJitterOffsetX: render_parameters.jitter_offset[0],
+            InJitterOffsetY: render_parameters.jitter_offset[1],
             InRenderSubrectDimensions: NVSDK_NGX_Dimensions {
-                Width: partial_texture_size.x,
-                Height: partial_texture_size.y,
+                Width: partial_texture_size[0],
+                Height: partial_texture_size[1],
             },
             InReset: render_parameters.reset as _,
-            InMVScaleX: render_parameters.motion_vector_scale.unwrap_or(Vec2::ONE).x,
-            InMVScaleY: render_parameters.motion_vector_scale.unwrap_or(Vec2::ONE).y,
+            InMVScaleX: render_parameters.motion_vector_scale.unwrap_or([1.0, 1.0])[0],
+            InMVScaleY: render_parameters.motion_vector_scale.unwrap_or([1.0, 1.0])[1],
             pInTransparencyMask: ptr::null_mut(),
             pInExposureTexture: exposure,
             pInBiasCurrentColorMask: match &render_parameters.bias {
@@ -212,34 +211,31 @@ impl DlssSuperResolution {
     }
 
     /// Suggested subpixel camera jitter for a given frame.
-    pub fn suggested_jitter(&self, frame_number: u32, render_resolution: UVec2) -> Vec2 {
-        let ratio = self.upscaled_resolution.x as f32 / render_resolution.x as f32;
+    pub fn suggested_jitter(&self, frame_number: u32, render_resolution: [u32; 2]) -> Vec2 {
+        let ratio = self.upscaled_resolution[0] as f32 / render_resolution[0] as f32;
         let phase_count = (8.0 * ratio * ratio) as u32;
         let i = frame_number % phase_count;
 
-        Vec2 {
-            x: halton_sequence(i, 2),
-            y: halton_sequence(i, 3),
-        } - 0.5
+        [halton_sequence(i, 2) - 0.5, halton_sequence(i, 3) - 0.5]
     }
 
     /// Suggested mip bias to apply when sampling textures.
-    pub fn suggested_mip_bias(&self, render_resolution: UVec2) -> f32 {
-        (render_resolution.x as f32 / self.upscaled_resolution.x as f32).log2() - 1.0
+    pub fn suggested_mip_bias(&self, render_resolution: [u32; 2]) -> f32 {
+        (render_resolution[0] as f32 / self.upscaled_resolution[0] as f32).log2() - 1.0
     }
 
     /// The upscaled resolution DLSS will output at.
-    pub fn upscaled_resolution(&self) -> UVec2 {
+    pub fn upscaled_resolution(&self) -> [u32; 2] {
         self.upscaled_resolution
     }
 
     /// The resolution the camera should render at, pre-upscaling.
-    pub fn render_resolution(&self) -> UVec2 {
+    pub fn render_resolution(&self) -> [u32; 2] {
         self.min_render_resolution
     }
 
     /// Like [`Self::render_resolution`], but returns a range of values for use with dynamic resolution scaling.
-    pub fn render_resolution_range(&self) -> RangeInclusive<UVec2> {
+    pub fn render_resolution_range(&self) -> RangeInclusive<[u32; 2]> {
         self.min_render_resolution..=self.max_render_resolution
     }
 }
@@ -279,12 +275,12 @@ pub struct DlssSuperResolutionRenderParameters<'a> {
     /// Whether DLSS should reset temporal history, useful for camera cuts.
     pub reset: bool,
     /// Subpixel jitter that was applied to your camera.
-    pub jitter_offset: Vec2,
+    pub jitter_offset: [f32; 2],
     /// Optionally use only a specific subrect of the input textures, rather than the whole textures.
     // TODO: Allow configuring partial texture origins
-    pub partial_texture_size: Option<UVec2>,
+    pub partial_texture_size: Option<[u32; 2]>,
     /// Optional scaling factor to apply to the values contained within [`Self::motion_vectors`].
-    pub motion_vector_scale: Option<Vec2>,
+    pub motion_vector_scale: Option<[f32; 2]>,
 }
 
 /// Camera exposure as input for [`DlssSuperResolution`]..
