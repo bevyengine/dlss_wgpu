@@ -1,6 +1,6 @@
 [package]
 name = "dlss_wgpu"
-version = "3.0.0"
+version = "4.0.0-dev"
 edition = "2024"
 categories = ["graphics", "rendering"]
 description = "Adds support for using DLSS with wgpu"
