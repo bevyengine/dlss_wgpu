@@ -48,3 +48,13 @@ The development version of the DLSS SDK comes with an in-app overlay to help deb
 Due to a bug in DLSS, you should [expect to see Vulkan validation errors](https://forums.developer.nvidia.com/t/validation-errors-using-dlss-vulkan-sdk-due-to-vkcmdclearcolorimage/326493).
 
 These errors are safe to ignore.
+
+## Contributing
+
+You can run cargo commands wihtout polluting your local environment by running:
+
+```sh
+docker run -v `pwd`:/src $(docker build -q .) cargo clippy
+```
+
+You must comply with the DLSS license to run this command.
