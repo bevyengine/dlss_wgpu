@@ -211,7 +211,7 @@ impl DlssSuperResolution {
     }
 
     /// Suggested subpixel camera jitter for a given frame.
-    pub fn suggested_jitter(&self, frame_number: u32, render_resolution: [u32; 2]) -> Vec2 {
+    pub fn suggested_jitter(&self, frame_number: u32, render_resolution: [u32; 2]) -> [f32; 2] {
         let ratio = self.upscaled_resolution[0] as f32 / render_resolution[0] as f32;
         let phase_count = (8.0 * ratio * ratio) as u32;
         let i = frame_number % phase_count;
