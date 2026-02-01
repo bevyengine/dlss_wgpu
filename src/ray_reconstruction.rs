@@ -23,6 +23,7 @@ impl DlssRayReconstruction {
     /// This is an expensive operation. The resulting object should be cached, and only recreated when settings change.
     ///
     /// This should only be called if [`crate::FeatureSupport::ray_reconstruction_supported`] is true.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         upscaled_resolution: [u32; 2],
         perf_quality_mode: DlssPerfQualityMode,
@@ -256,16 +257,16 @@ impl DlssRayReconstruction {
             pInWorldToViewMatrix: match render_parameters.specular_guide {
                 DlssRayReconstructionSpecularGuide::SpecularMotionVectors(_) => ptr::null_mut(),
                 DlssRayReconstructionSpecularGuide::SpecularHitDistance {
-                    world_to_view_matrix,
+                    mut world_to_view_rows_array,
                     ..
-                } => &mut world_to_view_matrix.transpose().to_cols_array() as *mut _,
+                } => &mut world_to_view_rows_array as *mut _,
             },
             pInViewToClipMatrix: match render_parameters.specular_guide {
                 DlssRayReconstructionSpecularGuide::SpecularMotionVectors(_) => ptr::null_mut(),
                 DlssRayReconstructionSpecularGuide::SpecularHitDistance {
-                    view_to_clip_matrix,
+                    mut view_to_clip_rows_array,
                     ..
-                } => &mut view_to_clip_matrix.transpose().to_cols_array() as *mut _,
+                } => &mut view_to_clip_rows_array as *mut _,
             },
             GBufferSurface: NVSDK_NGX_VK_GBuffer {
                 pInAttrib: [ptr::null_mut(); 16],
@@ -428,10 +429,10 @@ pub enum DlssRayReconstructionSpecularGuide<'a> {
     SpecularHitDistance {
         /// Specular hit distance texture.
         texture_view: &'a TextureView,
-        /// World-space to view-space camera matrix.
-        world_to_view_matrix: Mat4,
-        /// View-space to clip-space camera matrix.
-        view_to_clip_matrix: Mat4,
+        /// World-space to view-space camera matrix, as rows array.
+        world_to_view_rows_array: [f32; 16],
+        /// View-space to clip-space camera matrix, as rows array.
+        view_to_clip_rows_array: [f32; 16],
     },
 }
 
@@ -442,7 +443,7 @@ impl<'a> DlssRayReconstructionRenderParameters<'a> {
     }
 
     fn barrier_list(&self) -> impl Iterator<Item = TextureTransition<&'a Texture>> {
-        fn resource_barrier<'a>(texture_view: &'a TextureView) -> TextureTransition<&'a Texture> {
+        fn resource_barrier(texture_view: &TextureView) -> TextureTransition<&Texture> {
             TextureTransition {
                 texture: texture_view.texture(),
                 selector: None,
@@ -451,13 +452,13 @@ impl<'a> DlssRayReconstructionRenderParameters<'a> {
         }
 
         [
-            Some(resource_barrier(&self.diffuse_albedo)),
-            Some(resource_barrier(&self.specular_albedo)),
-            Some(resource_barrier(&self.normals)),
+            Some(resource_barrier(self.diffuse_albedo)),
+            Some(resource_barrier(self.specular_albedo)),
+            Some(resource_barrier(self.normals)),
             self.roughness.map(resource_barrier),
-            Some(resource_barrier(&self.color)),
-            Some(resource_barrier(&self.depth)),
-            Some(resource_barrier(&self.motion_vectors)),
+            Some(resource_barrier(self.color)),
+            Some(resource_barrier(self.depth)),
+            Some(resource_barrier(self.motion_vectors)),
             match &self.specular_guide {
                 DlssRayReconstructionSpecularGuide::SpecularMotionVectors(
                     specular_motion_vectors,
