@@ -91,7 +91,7 @@ pub fn request_device(
                 result = register_device_extensions(
                     project_id,
                     &mut args,
-                    &*raw_adapter,
+                    &raw_adapter,
                     feature_support,
                 );
             })),
