@@ -302,7 +302,7 @@ impl<'a> DlssSuperResolutionRenderParameters<'a> {
     }
 
     fn barrier_list(&self) -> impl Iterator<Item = TextureTransition<&'a Texture>> {
-        fn resource_barrier<'a>(texture_view: &'a TextureView) -> TextureTransition<&'a Texture> {
+        fn resource_barrier(texture_view: &TextureView) -> TextureTransition<&Texture> {
             TextureTransition {
                 texture: texture_view.texture(),
                 selector: None,
@@ -311,9 +311,9 @@ impl<'a> DlssSuperResolutionRenderParameters<'a> {
         }
 
         [
-            Some(resource_barrier(&self.color)),
-            Some(resource_barrier(&self.depth)),
-            Some(resource_barrier(&self.motion_vectors)),
+            Some(resource_barrier(self.color)),
+            Some(resource_barrier(self.depth)),
+            Some(resource_barrier(self.motion_vectors)),
             match &self.exposure {
                 DlssSuperResolutionExposure::Manual { exposure, .. } => {
                     Some(resource_barrier(exposure))

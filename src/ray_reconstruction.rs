@@ -23,6 +23,7 @@ impl DlssRayReconstruction {
     /// This is an expensive operation. The resulting object should be cached, and only recreated when settings change.
     ///
     /// This should only be called if [`crate::FeatureSupport::ray_reconstruction_supported`] is true.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         upscaled_resolution: [u32; 2],
         perf_quality_mode: DlssPerfQualityMode,
@@ -442,7 +443,7 @@ impl<'a> DlssRayReconstructionRenderParameters<'a> {
     }
 
     fn barrier_list(&self) -> impl Iterator<Item = TextureTransition<&'a Texture>> {
-        fn resource_barrier<'a>(texture_view: &'a TextureView) -> TextureTransition<&'a Texture> {
+        fn resource_barrier(texture_view: &TextureView) -> TextureTransition<&Texture> {
             TextureTransition {
                 texture: texture_view.texture(),
                 selector: None,
@@ -451,13 +452,13 @@ impl<'a> DlssRayReconstructionRenderParameters<'a> {
         }
 
         [
-            Some(resource_barrier(&self.diffuse_albedo)),
-            Some(resource_barrier(&self.specular_albedo)),
-            Some(resource_barrier(&self.normals)),
+            Some(resource_barrier(self.diffuse_albedo)),
+            Some(resource_barrier(self.specular_albedo)),
+            Some(resource_barrier(self.normals)),
             self.roughness.map(resource_barrier),
-            Some(resource_barrier(&self.color)),
-            Some(resource_barrier(&self.depth)),
-            Some(resource_barrier(&self.motion_vectors)),
+            Some(resource_barrier(self.color)),
+            Some(resource_barrier(self.depth)),
+            Some(resource_barrier(self.motion_vectors)),
             match &self.specular_guide {
                 DlssRayReconstructionSpecularGuide::SpecularMotionVectors(
                     specular_motion_vectors,
