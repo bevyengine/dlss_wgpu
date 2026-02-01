@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check format
+        run: |
+          cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Checkout DLSS
+        uses: actions/checkout@v4
+        with:
+          repository: NVIDIA/DLSS
+          path: DLSS
+          ref: v310.5.0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update;
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install --no-install-recommends -yq libclang-dev
+          curl -O https://sdk.lunarg.com/sdk/download/1.4.335.0/linux/vulkansdk-linux-x86_64-1.4.335.0.tar.xz
+          tar --xz -x -f vulkansdk-linux-x86_64-1.4.335.0.tar.xz
+
+      - name: Run clippy
+        run: |
+          cargo clippy -- -D warnings
+        env:
+          DLSS_SDK: ${{ github.workspace }}/DLSS
+          VULKAN_SDK: ${{ github.workspace }}/1.4.335.0/x86_64/
+
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Checkout DLSS
+        uses: actions/checkout@v4
+        with:
+          repository: NVIDIA/DLSS
+          path: DLSS
+          ref: v310.5.0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update;
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install --no-install-recommends -yq libclang-dev
+          curl -O https://sdk.lunarg.com/sdk/download/1.4.335.0/linux/vulkansdk-linux-x86_64-1.4.335.0.tar.xz
+          tar --xz -x -f vulkansdk-linux-x86_64-1.4.335.0.tar.xz
+
+      - name: Check
+        run: |
+          cargo check
+        env:
+          DLSS_SDK: ${{ github.workspace }}/DLSS
+          VULKAN_SDK: ${{ github.workspace }}/1.4.335.0/x86_64/
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Checkout DLSS
+        uses: actions/checkout@v4
+        with:
+          repository: NVIDIA/DLSS
+          path: DLSS
+          ref: v310.5.0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update;
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install --no-install-recommends -yq libclang-dev
+          curl -O https://sdk.lunarg.com/sdk/download/1.4.335.0/linux/vulkansdk-linux-x86_64-1.4.335.0.tar.xz
+          tar --xz -x -f vulkansdk-linux-x86_64-1.4.335.0.tar.xz
+
+      - name: Test
+        run: |
+          cargo test
+        env:
+          DLSS_SDK: ${{ github.workspace }}/DLSS
+          VULKAN_SDK: ${{ github.workspace }}/1.4.335.0/x86_64/
