@@ -256,16 +256,16 @@ impl DlssRayReconstruction {
             pInWorldToViewMatrix: match render_parameters.specular_guide {
                 DlssRayReconstructionSpecularGuide::SpecularMotionVectors(_) => ptr::null_mut(),
                 DlssRayReconstructionSpecularGuide::SpecularHitDistance {
-                    world_to_view_matrix,
+                    mut world_to_view_matrix,
                     ..
-                } => &mut world_to_view_matrix.transpose().to_cols_array() as *mut _,
+                } => &mut world_to_view_matrix as *mut _,
             },
             pInViewToClipMatrix: match render_parameters.specular_guide {
                 DlssRayReconstructionSpecularGuide::SpecularMotionVectors(_) => ptr::null_mut(),
                 DlssRayReconstructionSpecularGuide::SpecularHitDistance {
-                    view_to_clip_matrix,
+                    mut view_to_clip_matrix,
                     ..
-                } => &mut view_to_clip_matrix.transpose().to_cols_array() as *mut _,
+                } => &mut view_to_clip_matrix as *mut _,
             },
             GBufferSurface: NVSDK_NGX_VK_GBuffer {
                 pInAttrib: [ptr::null_mut(); 16],
@@ -429,9 +429,9 @@ pub enum DlssRayReconstructionSpecularGuide<'a> {
         /// Specular hit distance texture.
         texture_view: &'a TextureView,
         /// World-space to view-space camera matrix.
-        world_to_view_matrix: Mat4,
+        world_to_view_matrix: [f32; 16],
         /// View-space to clip-space camera matrix.
-        view_to_clip_matrix: Mat4,
+        view_to_clip_matrix: [f32; 16],
     },
 }
 
