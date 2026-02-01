@@ -256,16 +256,16 @@ impl DlssRayReconstruction {
             pInWorldToViewMatrix: match render_parameters.specular_guide {
                 DlssRayReconstructionSpecularGuide::SpecularMotionVectors(_) => ptr::null_mut(),
                 DlssRayReconstructionSpecularGuide::SpecularHitDistance {
-                    mut transpose_world_to_view_cols_array,
+                    mut world_to_view_rows_array,
                     ..
-                } => &mut transpose_world_to_view_cols_array as *mut _,
+                } => &mut world_to_view_rows_array as *mut _,
             },
             pInViewToClipMatrix: match render_parameters.specular_guide {
                 DlssRayReconstructionSpecularGuide::SpecularMotionVectors(_) => ptr::null_mut(),
                 DlssRayReconstructionSpecularGuide::SpecularHitDistance {
-                    mut transpose_view_to_clip_matrix_cols_array,
+                    mut view_to_clip_rows_array,
                     ..
-                } => &mut transpose_view_to_clip_matrix_cols_array as *mut _,
+                } => &mut view_to_clip_rows_array as *mut _,
             },
             GBufferSurface: NVSDK_NGX_VK_GBuffer {
                 pInAttrib: [ptr::null_mut(); 16],
@@ -428,10 +428,10 @@ pub enum DlssRayReconstructionSpecularGuide<'a> {
     SpecularHitDistance {
         /// Specular hit distance texture.
         texture_view: &'a TextureView,
-        /// World-space to view-space camera matrix, transposed and as cols array.
-        transpose_world_to_view_cols_array: [f32; 16],
-        /// View-space to clip-space camera matrix, transposed and as cols array.
-        transpose_view_to_clip_matrix_cols_array: [f32; 16],
+        /// World-space to view-space camera matrix, as rows array.
+        world_to_view_rows_array: [f32; 16],
+        /// View-space to clip-space camera matrix, as rows array.
+        view_to_clip_rows_array: [f32; 16],
     },
 }
 
