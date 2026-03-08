@@ -25,6 +25,3 @@ cc = "1"
 [features]
 debug_overlay = []
 mock = []
-
-# [patch."crates-io"]
-# wgpu = { git = "https://github.com/gfx-rs/wgpu", branch = "trunk" }
