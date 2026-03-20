@@ -20,7 +20,7 @@
 //! // Initialize wgpu
 //! let instance = dlss_wgpu::create_instance(project_id, &instance_descriptor, &mut feature_support).unwrap();
 //! let adapter = instance.request_adapter(&adapter_options).await.unwrap();
-//! let (device, queue) = dlss_wgpu::request_device(project_id, &adapter, &device_descriptor, &mut feature_support).unwrap();
+//! let (device, queue) = dlss_wgpu::request_device(project_id, &adapter, &device_descriptor, &mut feature_support, None).unwrap();
 //!
 //! // Check for feature support, if false don't create DLSS resources
 //! println!("DLSS supported: {}", feature_support.super_resolution_supported);
