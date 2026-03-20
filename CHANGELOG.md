@@ -1,5 +1,7 @@
-# v4.0.0-dev
+# v4.0.0
 * Remove glam dependency
+* `request_device` now accepts an `Option<Limits>` since wgpu's `open_with_callback` now requires it. The `Option<Limits>` will be used if provided, otherwise the value will fall back to `adapter.limits()`.
+* Upgrade to wgpu 29
 
 # v3.0.0
 * Upgrade to wgpu 28
