@@ -2,6 +2,7 @@
 * Remove glam dependency
 * `request_device` now accepts an `Option<Limits>` since wgpu's `open_with_callback` now requires it. The `Option<Limits>` will be used if provided, otherwise the value will fall back to `adapter.limits()`.
 * Upgrade to wgpu 29
+* Bump DLSS SDK to v310.5.3
 
 # v3.0.0
 * Upgrade to wgpu 28
