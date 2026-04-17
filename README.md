@@ -18,7 +18,7 @@ The DLSS SDK cannot be redistributed by this crate. You will need to download th
 
 * Ensure you comply with the [DLSS SDK license](https://github.com/NVIDIA/DLSS/blob/v310.5.3/LICENSE.txt)
 * Clone the [NVIDIA DLSS Super Resolution SDK v310.5.3](https://github.com/NVIDIA/DLSS/tree/v310.5.3)
-* Set the environment variable `DLSS_SDK = /path/to/DLSS`
+* Set the environment variable `DLSS_SDK = /path/to/DLSS` (must be an absolute path)
 
 ## Build Dependencies
 
