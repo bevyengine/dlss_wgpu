@@ -145,6 +145,7 @@ impl DlssRayReconstruction {
 
         // TODO: We may want to expose some more of these
         let mut eval_params = NVSDK_NGX_VK_DLSSD_Eval_Params {
+            pInResponsivityMask: &mut texture_to_ngx(render_parameters.responsivity_mask, adapter),
             pInDiffuseAlbedo: &mut texture_to_ngx(render_parameters.diffuse_albedo, adapter)
                 as *mut _,
             pInSpecularAlbedo: &mut texture_to_ngx(render_parameters.specular_albedo, adapter)
@@ -192,6 +193,7 @@ impl DlssRayReconstruction {
             InExposureScale: 0.0,
             InIndicatorInvertXAxis: 0,
             InIndicatorInvertYAxis: 0,
+            InResponsivityMaskSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             pInReflectedAlbedo: ptr::null_mut(),
             pInColorBeforeParticles: ptr::null_mut(),
             pInColorAfterParticles: ptr::null_mut(),
@@ -269,7 +271,7 @@ impl DlssRayReconstruction {
                 } => &mut view_to_clip_rows_array as *mut _,
             },
             GBufferSurface: NVSDK_NGX_VK_GBuffer {
-                pInAttrib: [ptr::null_mut(); 16],
+                pInAttrib: [ptr::null_mut(); 17],
             },
             InToneMapperType: NVSDK_NGX_ToneMapperType_NVSDK_NGX_TONEMAPPER_STRING,
             pInMotionVectors3D: ptr::null_mut(),
@@ -419,6 +421,8 @@ pub struct DlssRayReconstructionRenderParameters<'a> {
     pub partial_texture_size: Option<[u32; 2]>,
     /// Optional scaling factor to apply to the values contained within [`Self::motion_vectors`].
     pub motion_vector_scale: Option<[f32; 2]>,
+    /// Responsitivy Mask
+    pub responsivity_mask: &'a TextureView,
 }
 
 /// Guide buffer for specular material handling.
