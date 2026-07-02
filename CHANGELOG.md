@@ -1,3 +1,9 @@
+# v5.0.0
+
+* `DlssRayReconstructionRenderParameters` now includes a responsivity_mask texture
+* Upgrade to wgpu 30
+* Bump DLSS SDK to v310.7.0
+
 # v4.0.0
 * Remove glam dependency
 * `request_device` now accepts an `Option<Limits>` since wgpu's `open_with_callback` now requires it. The `Option<Limits>` will be used if provided, otherwise the value will fall back to `adapter.limits()`.
