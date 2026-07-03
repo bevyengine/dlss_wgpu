@@ -410,6 +410,8 @@ pub struct DlssRayReconstructionRenderParameters<'a> {
     pub screen_space_subsurface_scattering_guide: Option<&'a TextureView>,
     /// Optional per-pixel bias to make DLSS more reactive.
     pub bias: Option<&'a TextureView>,
+    /// Responsitivy Mask
+    pub responsivity_mask: &'a TextureView,
     /// The texture DLSS outputs to.
     pub dlss_output: &'a TextureView,
     /// Whether DLSS should reset temporal history, useful for camera cuts.
@@ -421,8 +423,6 @@ pub struct DlssRayReconstructionRenderParameters<'a> {
     pub partial_texture_size: Option<[u32; 2]>,
     /// Optional scaling factor to apply to the values contained within [`Self::motion_vectors`].
     pub motion_vector_scale: Option<[f32; 2]>,
-    /// Responsitivy Mask
-    pub responsivity_mask: &'a TextureView,
 }
 
 /// Guide buffer for specular material handling.
