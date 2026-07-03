@@ -145,7 +145,7 @@ impl DlssRayReconstruction {
 
         // TODO: We may want to expose some more of these
         let mut eval_params = NVSDK_NGX_VK_DLSSD_Eval_Params {
-            pInResponsivityMask: &mut texture_to_ngx(render_parameters.responsivity_mask, adapter),
+            pInResponsivityMask: ptr::null_mut(),
             pInDiffuseAlbedo: &mut texture_to_ngx(render_parameters.diffuse_albedo, adapter)
                 as *mut _,
             pInSpecularAlbedo: &mut texture_to_ngx(render_parameters.specular_albedo, adapter)
@@ -410,8 +410,6 @@ pub struct DlssRayReconstructionRenderParameters<'a> {
     pub screen_space_subsurface_scattering_guide: Option<&'a TextureView>,
     /// Optional per-pixel bias to make DLSS more reactive.
     pub bias: Option<&'a TextureView>,
-    /// Responsitivy Mask
-    pub responsivity_mask: &'a TextureView,
     /// The texture DLSS outputs to.
     pub dlss_output: &'a TextureView,
     /// Whether DLSS should reset temporal history, useful for camera cuts.
