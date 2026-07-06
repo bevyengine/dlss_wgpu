@@ -177,7 +177,7 @@ impl DlssSuperResolution {
             InIndicatorInvertXAxis: 0,
             InIndicatorInvertYAxis: 0,
             GBufferSurface: NVSDK_NGX_VK_GBuffer {
-                pInAttrib: [ptr::null_mut(); 16],
+                pInAttrib: [ptr::null_mut(); 17],
             },
             InToneMapperType: NVSDK_NGX_ToneMapperType_NVSDK_NGX_TONEMAPPER_STRING,
             pInMotionVectors3D: ptr::null_mut(),
