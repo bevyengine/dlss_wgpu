@@ -1,6 +1,5 @@
 # v5.0.0
 
-* `DlssRayReconstructionRenderParameters` now includes a responsivity_mask texture
 * Upgrade to wgpu 30
 * Bump DLSS SDK to v310.7.0
 
