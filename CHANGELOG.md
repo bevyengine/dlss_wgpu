@@ -3,6 +3,7 @@
 * Upgrade to wgpu 30
 * Bump DLSS SDK to v310.7.0
 * Add DLSS Frame Generation support
+* Add presentation pacing support via VK_NV_present_metering
 
 # v4.0.0
 * Remove glam dependency

@@ -1,4 +1,7 @@
-use crate::{feature_info::with_feature_info, nvsdk_ngx::*, sdk::DlssFeature};
+use crate::{
+    feature_info::with_feature_info, nvsdk_ngx::*, present_metering::register_present_metering,
+    sdk::DlssFeature,
+};
 use ash::{Entry, vk::PhysicalDevice};
 use std::{ffi::CStr, ptr, slice};
 use uuid::Uuid;
@@ -96,7 +99,7 @@ pub fn request_device(
 }
 
 /// Call this inside of [`wgpu::hal::vulkan::Adapter::open_with_callback`] to register the wgpu
-/// device extensions necessary for DLSS.
+/// device extensions necessary for DLSS, including VK_NV_present_metering when supported.
 pub fn register_device_extensions(
     project_id: Uuid,
     args: &mut CreateDeviceCallbackArgs,
@@ -119,6 +122,7 @@ pub fn register_device_extensions(
             Err(err) => result = Err(err),
         }
     }
+    feature_support.present_metering_supported = register_present_metering(args, raw_adapter);
     result
 }
 
@@ -197,6 +201,8 @@ pub struct FeatureSupport {
     pub ray_reconstruction_supported: bool,
     /// DLSS Frame Generation (DLSS-FG) is supported.
     pub frame_generation_supported: bool,
+    /// Presentation pacing via VK_NV_present_metering is supported.
+    pub present_metering_supported: bool,
 }
 
 impl Default for FeatureSupport {
@@ -205,6 +211,7 @@ impl Default for FeatureSupport {
             super_resolution_supported: true,
             ray_reconstruction_supported: true,
             frame_generation_supported: true,
+            present_metering_supported: true,
         }
     }
 }

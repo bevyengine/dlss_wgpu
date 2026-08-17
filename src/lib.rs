@@ -66,6 +66,8 @@ mod sdk;
 /// DLSS Frame Generation.
 #[cfg(not(feature = "mock"))]
 pub mod frame_generation;
+/// Presentation pacing via VK_NV_present_metering, e.g. for frame generation.
+pub mod present_metering;
 /// DLSS Ray Reconstruction.
 #[cfg(not(feature = "mock"))]
 pub mod ray_reconstruction;
