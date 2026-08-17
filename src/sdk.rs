@@ -11,6 +11,40 @@ use wgpu::{Device, hal::api::Vulkan};
 pub struct DlssSdk {
     pub(crate) parameters: *mut NVSDK_NGX_Parameter,
     pub(crate) device: Device,
+    feature_supported: [bool; DlssFeature::ALL.len()],
+    multi_frame_count_max: u32,
+}
+
+/// DLSS features whose runtime availability [`DlssSdk::feature_supported`] can report.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum DlssFeature {
+    SuperResolution,
+    RayReconstruction,
+    FrameGeneration,
+}
+
+impl DlssFeature {
+    pub(crate) const ALL: [DlssFeature; 3] = [
+        DlssFeature::SuperResolution,
+        DlssFeature::RayReconstruction,
+        DlssFeature::FrameGeneration,
+    ];
+
+    pub(crate) fn ngx_feature(self) -> NVSDK_NGX_Feature {
+        match self {
+            DlssFeature::SuperResolution => NVSDK_NGX_Feature_NVSDK_NGX_Feature_SuperSampling,
+            DlssFeature::RayReconstruction => NVSDK_NGX_Feature_NVSDK_NGX_Feature_RayReconstruction,
+            DlssFeature::FrameGeneration => NVSDK_NGX_Feature_NVSDK_NGX_Feature_FrameGeneration,
+        }
+    }
+
+    fn availability_key(self) -> &'static [u8] {
+        match self {
+            DlssFeature::SuperResolution => NVSDK_NGX_Parameter_SuperSampling_Available,
+            DlssFeature::RayReconstruction => NVSDK_NGX_Parameter_SuperSamplingDenoising_Available,
+            DlssFeature::FrameGeneration => NVSDK_NGX_Parameter_FrameGeneration_Available,
+        }
+    }
 }
 
 impl DlssSdk {
@@ -44,23 +78,27 @@ impl DlssSdk {
 
             check_ngx_result(NVSDK_NGX_VULKAN_GetCapabilityParameters(&mut parameters))?;
 
-            let mut dlss_supported = 0;
-            let result = check_ngx_result(NVSDK_NGX_Parameter_GetI(
-                parameters,
-                NVSDK_NGX_Parameter_SuperSampling_Available.as_ptr().cast(),
-                &mut dlss_supported,
-            ));
-            if result.is_err() {
-                check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(parameters))?;
-                result?;
+            let mut feature_supported = [false; DlssFeature::ALL.len()];
+            for feature in DlssFeature::ALL {
+                // A failed query means the driver doesn't know the feature
+                feature_supported[feature as usize] =
+                    get_i32(parameters, feature.availability_key()).unwrap_or(0) != 0;
             }
-            if dlss_supported == 0 {
+            if !feature_supported.contains(&true) {
                 check_ngx_result(NVSDK_NGX_VULKAN_DestroyParameters(parameters))?;
                 return Err(DlssError::FeatureNotSupported);
             }
-        }
+            let multi_frame_count_max =
+                get_u32(parameters, NVSDK_NGX_DLSSG_Parameter_MultiFrameCountMax).unwrap_or(0);
 
-        Ok(Arc::new(Mutex::new(Self { parameters, device })))
+            Ok(Arc::new(Mutex::new(Self {
+                parameters,
+                device,
+                feature_supported,
+                // Absent or zero means only single-frame generation is supported
+                multi_frame_count_max: multi_frame_count_max.max(1),
+            })))
+        }
     }
 
     /// Returns the number of bytes of VRAM allocated by DLSS.
@@ -71,24 +109,32 @@ impl DlssSdk {
         })?;
         Ok(vram_allocated_bytes)
     }
+
+    /// Returns whether the NGX runtime reports the given feature as available on this system.
+    ///
+    /// This can be false even when the required device extensions are present, for example
+    /// on an unsupported GPU.
+    pub fn feature_supported(&self, feature: DlssFeature) -> bool {
+        self.feature_supported[feature as usize]
+    }
+
+    /// Returns the maximum number of frames DLSS Frame Generation can generate between each
+    /// pair of rendered frames.
+    ///
+    /// 1 means only single-frame generation for 2x output, 3 means up to 4x.
+    /// Only meaningful when [`DlssFeature::FrameGeneration`] is supported.
+    pub fn multi_frame_count_max(&self) -> u32 {
+        self.multi_frame_count_max
+    }
 }
 
 fn check_for_updates(project_id: Uuid) {
     thread::spawn(move || {
-        with_feature_info(
-            project_id,
-            NVSDK_NGX_Feature_NVSDK_NGX_Feature_SuperSampling,
-            |feature_info| unsafe {
+        for feature in DlssFeature::ALL {
+            with_feature_info(project_id, feature.ngx_feature(), |feature_info| unsafe {
                 NVSDK_NGX_UpdateFeature(&feature_info.Identifier, feature_info.FeatureID);
-            },
-        );
-        with_feature_info(
-            project_id,
-            NVSDK_NGX_Feature_NVSDK_NGX_Feature_RayReconstruction,
-            |feature_info| unsafe {
-                NVSDK_NGX_UpdateFeature(&feature_info.Identifier, feature_info.FeatureID);
-            },
-        );
+            });
+        }
     });
 }
 

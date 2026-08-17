@@ -239,3 +239,86 @@ pub fn halton_sequence(mut index: u32, base: u32) -> f32 {
     }
     result
 }
+
+// Typed accessors for the NGX parameter map. Names are the nul-terminated byte
+// string constants that bindgen generates from the SDK's parameter defines.
+
+pub(crate) unsafe fn set_ptr<T>(
+    parameters: *mut NVSDK_NGX_Parameter,
+    name: &[u8],
+    value: *const T,
+) {
+    unsafe {
+        NVSDK_NGX_Parameter_SetVoidPointer(
+            parameters,
+            name.as_ptr().cast(),
+            value.cast_mut().cast(),
+        );
+    }
+}
+
+pub(crate) unsafe fn set_optional_ptr<T>(
+    parameters: *mut NVSDK_NGX_Parameter,
+    name: &[u8],
+    value: Option<&T>,
+) {
+    unsafe {
+        set_ptr(
+            parameters,
+            name,
+            value.map_or(std::ptr::null(), std::ptr::from_ref),
+        );
+    }
+}
+
+pub(crate) unsafe fn set_u32(parameters: *mut NVSDK_NGX_Parameter, name: &[u8], value: u32) {
+    unsafe {
+        NVSDK_NGX_Parameter_SetUI(parameters, name.as_ptr().cast(), value);
+    }
+}
+
+pub(crate) unsafe fn set_f32(parameters: *mut NVSDK_NGX_Parameter, name: &[u8], value: f32) {
+    unsafe {
+        NVSDK_NGX_Parameter_SetF(parameters, name.as_ptr().cast(), value);
+    }
+}
+
+pub(crate) unsafe fn set_u64(parameters: *mut NVSDK_NGX_Parameter, name: &[u8], value: u64) {
+    unsafe {
+        NVSDK_NGX_Parameter_SetULL(parameters, name.as_ptr().cast(), value);
+    }
+}
+
+pub(crate) unsafe fn set_texture_size(
+    parameters: *mut NVSDK_NGX_Parameter,
+    width_parameter: &[u8],
+    height_parameter: &[u8],
+    view: &TextureView,
+) {
+    unsafe {
+        set_u32(parameters, width_parameter, view.texture().width());
+        set_u32(parameters, height_parameter, view.texture().height());
+    }
+}
+
+pub(crate) unsafe fn get_i32(
+    parameters: *mut NVSDK_NGX_Parameter,
+    name: &[u8],
+) -> Result<i32, DlssError> {
+    let mut value = 0;
+    check_ngx_result(unsafe {
+        NVSDK_NGX_Parameter_GetI(parameters, name.as_ptr().cast(), &mut value)
+    })?;
+    Ok(value)
+}
+
+pub(crate) unsafe fn get_u32(
+    parameters: *mut NVSDK_NGX_Parameter,
+    name: &[u8],
+) -> Result<u32, DlssError> {
+    let mut value = 0;
+    check_ngx_result(unsafe {
+        NVSDK_NGX_Parameter_GetUI(parameters, name.as_ptr().cast(), &mut value)
+    })?;
+    Ok(value)
+}

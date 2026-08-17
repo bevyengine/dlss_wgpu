@@ -8,6 +8,7 @@
 //! This crate only works with wgpu's Vulkan backend. Other backends are not supported.
 //!
 //! For further info on how to integrate DLSS into your application, read `$DLSS_SDK/doc/DLSS_Programming_Guide_Release.pdf`.
+//! Frame Generation is covered by `$DLSS_SDK/doc/DLSS-FG Programming Guide.pdf`.
 //!
 //! ## API Usage
 //! ```compile_fail
@@ -62,6 +63,11 @@ mod nvsdk_ngx;
 #[cfg(not(feature = "mock"))]
 mod sdk;
 
+/// DLSS Frame Generation.
+#[cfg(not(feature = "mock"))]
+pub mod frame_generation;
+/// Presentation pacing via VK_NV_present_metering, e.g. for frame generation.
+pub mod present_metering;
 /// DLSS Ray Reconstruction.
 #[cfg(not(feature = "mock"))]
 pub mod ray_reconstruction;
@@ -77,4 +83,4 @@ pub use initialization::{
 #[cfg(not(feature = "mock"))]
 pub use nvsdk_ngx::{DlssError, DlssFeatureFlags, DlssPerfQualityMode};
 #[cfg(not(feature = "mock"))]
-pub use sdk::DlssSdk;
+pub use sdk::{DlssFeature, DlssSdk};
