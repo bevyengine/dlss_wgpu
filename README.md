@@ -1,6 +1,6 @@
 # dlss_wgpu - Deep Learning Super Sampling for wgpu
 
-A wrapper for using [DLSS](https://www.nvidia.com/en-us/geforce/technologies/dlss) with [wgpu](https://github.com/gfx-rs/wgpu) when targeting Vulkan.
+A wrapper for using DLSS Super Resolution, Ray Reconstruction, and Frame Generation with [wgpu](https://github.com/gfx-rs/wgpu) when targeting Vulkan.
 
 ## Version Chart
 
@@ -38,6 +38,9 @@ Once your app is compiled, you do not need to distribute the entire DLSS SDK, or
 3. Additionally, for DLSS ray reconstruction:
     * Windows: Copy `$DLSS_SDK/lib/Windows_x86_64/rel/nvngx_dlssd.dll` to the same directory as your app
     * Linux: Copy `$DLSS_SDK/lib/Linux_x86_64/rel/libnvidia-ngx-dlssd.so.310.7.0` to the same directory as your app
+4. Additionally, for DLSS Frame Generation:
+    * Windows: Copy `$DLSS_SDK/lib/Windows_x86_64/rel/nvngx_dlssg.dll` to the same directory as your app
+    * Linux: Copy `$DLSS_SDK/lib/Linux_x86_64/rel/libnvidia-ngx-dlssg.so.310.7.0` to the same directory as your app
 
 ## Debug Overlay
 

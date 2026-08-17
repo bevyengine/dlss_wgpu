@@ -2,6 +2,7 @@
 
 * Upgrade to wgpu 30
 * Bump DLSS SDK to v310.7.0
+* Add DLSS Frame Generation support
 
 # v4.0.0
 * Remove glam dependency

@@ -11,6 +11,8 @@ fn main() {
     let vulkan_sdk = env::var("VULKAN_SDK").expect("VULKAN_SDK environment variable not set");
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
+    println!("cargo:rerun-if-env-changed=DLSS_SDK");
+
     // Link to needed libraries
     #[cfg(not(target_os = "windows"))]
     {

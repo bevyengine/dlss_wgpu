@@ -1,4 +1,4 @@
-use crate::{feature_info::with_feature_info, nvsdk_ngx::*};
+use crate::{feature_info::with_feature_info, nvsdk_ngx::*, sdk::DlssFeature};
 use ash::{Entry, vk::PhysicalDevice};
 use std::{ffi::CStr, ptr, slice};
 use uuid::Uuid;
@@ -49,24 +49,13 @@ pub fn register_instance_extensions(
     feature_support: &mut FeatureSupport,
 ) -> Result<(), RegisterInstanceExtensionsError> {
     let mut result = Ok(());
-    match required_instance_extensions(
-        project_id,
-        NVSDK_NGX_Feature_NVSDK_NGX_Feature_SuperSampling,
-        args.entry,
-    ) {
-        Ok((extensions, true)) => args.extensions.extend(extensions),
-        Ok((_, false)) => feature_support.super_resolution_supported = false,
-        Err(err) => result = Err(err),
-    };
-    match required_instance_extensions(
-        project_id,
-        NVSDK_NGX_Feature_NVSDK_NGX_Feature_RayReconstruction,
-        args.entry,
-    ) {
-        Ok((extensions, true)) => args.extensions.extend(extensions),
-        Ok((_, false)) => feature_support.ray_reconstruction_supported = false,
-        Err(err) => result = Err(err),
-    };
+    for feature in DlssFeature::ALL {
+        match required_instance_extensions(project_id, feature.ngx_feature(), args.entry) {
+            Ok((extensions, true)) => args.extensions.extend(extensions),
+            Ok((_, false)) => *feature_support.dlss_supported_mut(feature) = false,
+            Err(err) => result = Err(err),
+        }
+    }
     result
 }
 
@@ -106,8 +95,8 @@ pub fn request_device(
     }
 }
 
-/// Call this inside of [`wgpu::hal::vulkan::Instance::init_with_callback`] to register wgpu instance extensions
-/// necessary for DLSS.
+/// Call this inside of [`wgpu::hal::vulkan::Adapter::open_with_callback`] to register the wgpu
+/// device extensions necessary for DLSS.
 pub fn register_device_extensions(
     project_id: Uuid,
     args: &mut CreateDeviceCallbackArgs,
@@ -117,30 +106,19 @@ pub fn register_device_extensions(
     let raw_instance = raw_adapter.shared_instance().raw_instance();
     let raw_physical_device = raw_adapter.raw_physical_device();
     let mut result = Ok(());
-
-    match required_device_extensions(
-        project_id,
-        NVSDK_NGX_Feature_NVSDK_NGX_Feature_SuperSampling,
-        raw_adapter,
-        raw_instance.handle(),
-        raw_physical_device,
-    ) {
-        Ok((extensions, true)) => args.extensions.extend(extensions),
-        Ok((_, false)) => feature_support.super_resolution_supported = false,
-        Err(err) => result = Err(err),
-    };
-
-    match required_device_extensions(
-        project_id,
-        NVSDK_NGX_Feature_NVSDK_NGX_Feature_RayReconstruction,
-        raw_adapter,
-        raw_instance.handle(),
-        raw_physical_device,
-    ) {
-        Ok((extensions, true)) => args.extensions.extend(extensions),
-        Ok((_, false)) => feature_support.ray_reconstruction_supported = false,
-        Err(err) => result = Err(err),
-    };
+    for feature in DlssFeature::ALL {
+        match required_device_extensions(
+            project_id,
+            feature.ngx_feature(),
+            raw_adapter,
+            raw_instance.handle(),
+            raw_physical_device,
+        ) {
+            Ok((extensions, true)) => args.extensions.extend(extensions),
+            Ok((_, false)) => *feature_support.dlss_supported_mut(feature) = false,
+            Err(err) => result = Err(err),
+        }
+    }
     result
 }
 
@@ -217,6 +195,8 @@ pub struct FeatureSupport {
     pub super_resolution_supported: bool,
     /// DLSS Ray Reconstruction (DLSS-RR) is supported.
     pub ray_reconstruction_supported: bool,
+    /// DLSS Frame Generation (DLSS-FG) is supported.
+    pub frame_generation_supported: bool,
 }
 
 impl Default for FeatureSupport {
@@ -224,6 +204,17 @@ impl Default for FeatureSupport {
         Self {
             super_resolution_supported: true,
             ray_reconstruction_supported: true,
+            frame_generation_supported: true,
+        }
+    }
+}
+
+impl FeatureSupport {
+    fn dlss_supported_mut(&mut self, feature: DlssFeature) -> &mut bool {
+        match feature {
+            DlssFeature::SuperResolution => &mut self.super_resolution_supported,
+            DlssFeature::RayReconstruction => &mut self.ray_reconstruction_supported,
+            DlssFeature::FrameGeneration => &mut self.frame_generation_supported,
         }
     }
 }
