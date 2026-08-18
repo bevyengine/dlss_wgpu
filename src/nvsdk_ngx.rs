@@ -168,7 +168,7 @@ pub enum DlssError {
         "The requested feature or functionality has not been implemented in the current version of the NGX SDK, display driver, or feature library."
     )]
     NotImplemented,
-    #[error("The NGX SDK returned an error code {0:#x}")]
+    #[error("The NGX SDK returned an unknown error code {0:#x}")]
     Unknown(NVSDK_NGX_Result),
 }
 
