@@ -1,3 +1,7 @@
+# Unreleased
+* Fix dlss_wgpu incorrectly turning errors into Result::Ok(())
+* Add DlssError::Unknown
+
 # v5.0.0
 
 * Upgrade to wgpu 30
