@@ -129,28 +129,36 @@ impl DlssSuperResolution {
             .partial_texture_size
             .unwrap_or(self.max_render_resolution);
 
-        let (exposure, exposure_scale, pre_exposure) = match &render_parameters.exposure {
+        // NGX reads these through raw pointers during EvaluateFeature. The bindings
+        // must stay alive until the evaluate call below.
+        let (mut exposure, exposure_scale, pre_exposure) = match &render_parameters.exposure {
             DlssSuperResolutionExposure::Manual {
                 exposure,
                 exposure_scale,
                 pre_exposure,
             } => (
-                &mut texture_to_ngx(exposure, adapter) as *mut _,
+                Some(texture_to_ngx(exposure, adapter)),
                 exposure_scale.unwrap_or(1.0),
                 pre_exposure.unwrap_or(0.0),
             ),
-            DlssSuperResolutionExposure::Automatic => (ptr::null_mut(), 0.0, 0.0),
+            DlssSuperResolutionExposure::Automatic => (None, 0.0, 0.0),
         };
+        let mut color = texture_to_ngx(render_parameters.color, adapter);
+        let mut dlss_output = texture_to_ngx(render_parameters.dlss_output, adapter);
+        let mut depth = texture_to_ngx(render_parameters.depth, adapter);
+        let mut motion_vectors = texture_to_ngx(render_parameters.motion_vectors, adapter);
+        let mut bias = render_parameters
+            .bias
+            .map(|bias| texture_to_ngx(bias, adapter));
 
         let mut eval_params = NVSDK_NGX_VK_DLSS_Eval_Params {
             Feature: NVSDK_NGX_VK_Feature_Eval_Params {
-                pInColor: &mut texture_to_ngx(render_parameters.color, adapter) as *mut _,
-                pInOutput: &mut texture_to_ngx(render_parameters.dlss_output, adapter) as *mut _,
+                pInColor: &mut color,
+                pInOutput: &mut dlss_output,
                 InSharpness: 0.0,
             },
-            pInDepth: &mut texture_to_ngx(render_parameters.depth, adapter) as *mut _,
-            pInMotionVectors: &mut texture_to_ngx(render_parameters.motion_vectors, adapter)
-                as *mut _,
+            pInDepth: &mut depth,
+            pInMotionVectors: &mut motion_vectors,
             InJitterOffsetX: render_parameters.jitter_offset[0],
             InJitterOffsetY: render_parameters.jitter_offset[1],
             InRenderSubrectDimensions: NVSDK_NGX_Dimensions {
@@ -161,11 +169,8 @@ impl DlssSuperResolution {
             InMVScaleX: render_parameters.motion_vector_scale.unwrap_or([1.0, 1.0])[0],
             InMVScaleY: render_parameters.motion_vector_scale.unwrap_or([1.0, 1.0])[1],
             pInTransparencyMask: ptr::null_mut(),
-            pInExposureTexture: exposure,
-            pInBiasCurrentColorMask: match &render_parameters.bias {
-                Some(bias) => &mut texture_to_ngx(bias, adapter) as *mut _,
-                None => ptr::null_mut(),
-            },
+            pInExposureTexture: exposure.as_mut().map_or(ptr::null_mut(), ptr::from_mut),
+            pInBiasCurrentColorMask: bias.as_mut().map_or(ptr::null_mut(), ptr::from_mut),
             InColorSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InDepthSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InMVSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },

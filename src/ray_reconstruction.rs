@@ -143,25 +143,56 @@ impl DlssRayReconstruction {
             .partial_texture_size
             .unwrap_or(self.render_resolution);
 
+        // NGX reads these through raw pointers during EvaluateFeature. The bindings
+        // must stay alive until the evaluate call below.
+        let mut diffuse_albedo = texture_to_ngx(render_parameters.diffuse_albedo, adapter);
+        let mut specular_albedo = texture_to_ngx(render_parameters.specular_albedo, adapter);
+        let mut normals = texture_to_ngx(render_parameters.normals, adapter);
+        let mut roughness = render_parameters
+            .roughness
+            .map(|roughness| texture_to_ngx(roughness, adapter));
+        let mut color = texture_to_ngx(render_parameters.color, adapter);
+        let mut dlss_output = texture_to_ngx(render_parameters.dlss_output, adapter);
+        let mut depth = texture_to_ngx(render_parameters.depth, adapter);
+        let mut motion_vectors = texture_to_ngx(render_parameters.motion_vectors, adapter);
+        let mut bias = render_parameters
+            .bias
+            .map(|bias| texture_to_ngx(bias, adapter));
+        let mut screen_space_subsurface_scattering_guide = render_parameters
+            .screen_space_subsurface_scattering_guide
+            .map(|guide| texture_to_ngx(guide, adapter));
+        let mut specular_motion_vectors = None;
+        let mut specular_hit_distance = None;
+        let mut world_to_view = None;
+        let mut view_to_clip = None;
+        match render_parameters.specular_guide {
+            DlssRayReconstructionSpecularGuide::SpecularMotionVectors(motion_vectors) => {
+                specular_motion_vectors = Some(texture_to_ngx(motion_vectors, adapter));
+            }
+            DlssRayReconstructionSpecularGuide::SpecularHitDistance {
+                texture_view,
+                world_to_view_rows_array,
+                view_to_clip_rows_array,
+            } => {
+                specular_hit_distance = Some(texture_to_ngx(texture_view, adapter));
+                world_to_view = Some(world_to_view_rows_array);
+                view_to_clip = Some(view_to_clip_rows_array);
+            }
+        }
+
         // TODO: We may want to expose some more of these
         let mut eval_params = NVSDK_NGX_VK_DLSSD_Eval_Params {
             pInResponsivityMask: ptr::null_mut(),
-            pInDiffuseAlbedo: &mut texture_to_ngx(render_parameters.diffuse_albedo, adapter)
-                as *mut _,
-            pInSpecularAlbedo: &mut texture_to_ngx(render_parameters.specular_albedo, adapter)
-                as *mut _,
-            pInNormals: &mut texture_to_ngx(render_parameters.normals, adapter) as *mut _,
-            pInRoughness: match render_parameters.roughness {
-                Some(roughness) => &mut texture_to_ngx(roughness, adapter) as *mut _,
-                None => ptr::null_mut(),
-            },
-            pInColor: &mut texture_to_ngx(render_parameters.color, adapter) as *mut _,
+            pInDiffuseAlbedo: &mut diffuse_albedo,
+            pInSpecularAlbedo: &mut specular_albedo,
+            pInNormals: &mut normals,
+            pInRoughness: roughness.as_mut().map_or(ptr::null_mut(), ptr::from_mut),
+            pInColor: &mut color,
             pInAlpha: ptr::null_mut(),
-            pInOutput: &mut texture_to_ngx(render_parameters.dlss_output, adapter) as *mut _,
+            pInOutput: &mut dlss_output,
             pInOutputAlpha: ptr::null_mut(),
-            pInDepth: &mut texture_to_ngx(render_parameters.depth, adapter) as *mut _,
-            pInMotionVectors: &mut texture_to_ngx(render_parameters.motion_vectors, adapter)
-                as *mut _,
+            pInDepth: &mut depth,
+            pInMotionVectors: &mut motion_vectors,
             InJitterOffsetX: render_parameters.jitter_offset[0],
             InJitterOffsetY: render_parameters.jitter_offset[1],
             InRenderSubrectDimensions: NVSDK_NGX_Dimensions {
@@ -173,10 +204,7 @@ impl DlssRayReconstruction {
             InMVScaleY: render_parameters.motion_vector_scale.unwrap_or([1.0, 1.0])[1],
             pInTransparencyMask: ptr::null_mut(),
             pInExposureTexture: ptr::null_mut(),
-            pInBiasCurrentColorMask: match &render_parameters.bias {
-                Some(bias) => &mut texture_to_ngx(bias, adapter) as *mut _,
-                None => ptr::null_mut(),
-            },
+            pInBiasCurrentColorMask: bias.as_mut().map_or(ptr::null_mut(), ptr::from_mut),
             InAlphaSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InOutputAlphaSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InDiffuseAlbedoSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
@@ -201,14 +229,9 @@ impl DlssRayReconstruction {
             pInColorAfterTransparency: ptr::null_mut(),
             pInColorBeforeFog: ptr::null_mut(),
             pInColorAfterFog: ptr::null_mut(),
-            pInScreenSpaceSubsurfaceScatteringGuide: match &render_parameters
-                .screen_space_subsurface_scattering_guide
-            {
-                Some(screen_space_subsurface_scattering_guide) => {
-                    &mut texture_to_ngx(screen_space_subsurface_scattering_guide, adapter) as *mut _
-                }
-                None => ptr::null_mut(),
-            },
+            pInScreenSpaceSubsurfaceScatteringGuide: screen_space_subsurface_scattering_guide
+                .as_mut()
+                .map_or(ptr::null_mut(), ptr::from_mut),
             pInColorBeforeScreenSpaceSubsurfaceScattering: ptr::null_mut(),
             pInColorAfterScreenSpaceSubsurfaceScattering: ptr::null_mut(),
             pInScreenSpaceRefractionGuide: ptr::null_mut(),
@@ -218,12 +241,9 @@ impl DlssRayReconstruction {
             pInColorBeforeDepthOfField: ptr::null_mut(),
             pInColorAfterDepthOfField: ptr::null_mut(),
             pInDiffuseHitDistance: ptr::null_mut(),
-            pInSpecularHitDistance: match render_parameters.specular_guide {
-                DlssRayReconstructionSpecularGuide::SpecularMotionVectors(_) => ptr::null_mut(),
-                DlssRayReconstructionSpecularGuide::SpecularHitDistance {
-                    texture_view, ..
-                } => &mut texture_to_ngx(texture_view, adapter) as *mut _,
-            },
+            pInSpecularHitDistance: specular_hit_distance
+                .as_mut()
+                .map_or(ptr::null_mut(), ptr::from_mut),
             pInDiffuseRayDirection: ptr::null_mut(),
             pInSpecularRayDirection: ptr::null_mut(),
             pInDiffuseRayDirectionHitDistance: ptr::null_mut(),
@@ -256,20 +276,12 @@ impl DlssRayReconstruction {
             InSpecularRayDirectionSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InDiffuseRayDirectionHitDistanceSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InSpecularRayDirectionHitDistanceSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
-            pInWorldToViewMatrix: match render_parameters.specular_guide {
-                DlssRayReconstructionSpecularGuide::SpecularMotionVectors(_) => ptr::null_mut(),
-                DlssRayReconstructionSpecularGuide::SpecularHitDistance {
-                    mut world_to_view_rows_array,
-                    ..
-                } => &mut world_to_view_rows_array as *mut _,
-            },
-            pInViewToClipMatrix: match render_parameters.specular_guide {
-                DlssRayReconstructionSpecularGuide::SpecularMotionVectors(_) => ptr::null_mut(),
-                DlssRayReconstructionSpecularGuide::SpecularHitDistance {
-                    mut view_to_clip_rows_array,
-                    ..
-                } => &mut view_to_clip_rows_array as *mut _,
-            },
+            pInWorldToViewMatrix: world_to_view
+                .as_mut()
+                .map_or(ptr::null_mut(), |matrix| ptr::from_mut(matrix).cast()),
+            pInViewToClipMatrix: view_to_clip
+                .as_mut()
+                .map_or(ptr::null_mut(), |matrix| ptr::from_mut(matrix).cast()),
             GBufferSurface: NVSDK_NGX_VK_GBuffer {
                 pInAttrib: [ptr::null_mut(); 17],
             },
@@ -281,12 +293,9 @@ impl DlssRayReconstruction {
             pInPositionViewSpace: ptr::null_mut(),
             InFrameTimeDeltaInMsec: 0.0,
             pInRayTracingHitDistance: ptr::null_mut(),
-            pInMotionVectorsReflections: match render_parameters.specular_guide {
-                DlssRayReconstructionSpecularGuide::SpecularMotionVectors(
-                    specular_motion_vectors,
-                ) => &mut texture_to_ngx(specular_motion_vectors, adapter) as *mut _,
-                DlssRayReconstructionSpecularGuide::SpecularHitDistance { .. } => ptr::null_mut(),
-            },
+            pInMotionVectorsReflections: specular_motion_vectors
+                .as_mut()
+                .map_or(ptr::null_mut(), ptr::from_mut),
             pInTransparencyLayer: ptr::null_mut(),
             InTransparencyLayerSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             pInTransparencyLayerOpacity: ptr::null_mut(),
