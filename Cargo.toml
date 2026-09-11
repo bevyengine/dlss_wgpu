@@ -1,6 +1,6 @@
 [package]
 name = "dlss_wgpu"
-version = "5.0.0"
+version = "6.0.0"
 edition = "2024"
 categories = ["graphics", "rendering"]
 description = "Adds support for using DLSS with wgpu"
@@ -16,7 +16,7 @@ bitflags = "2"
 thiserror = "2"
 
 [build-dependencies]
-bindgen = "0.72"
+bindgen = "0.73"
 cc = "1"
 
 [features]

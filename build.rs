@@ -1,4 +1,7 @@
-use std::{env, path::PathBuf};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 fn main() {
     if cfg!(feature = "mock") {
@@ -11,21 +14,34 @@ fn main() {
     let vulkan_sdk = env::var("VULKAN_SDK").expect("VULKAN_SDK environment variable not set");
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
+    // Determine platform info
+    let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    let platform = if target_os == "windows" {
+        format!("Windows_{target_arch}")
+    } else {
+        format!("Linux_{target_arch}")
+    };
+    println!("cargo:rustc-env=DLSS_SDK_PLATFORM={platform}");
+
     // Link to needed libraries
-    #[cfg(not(target_os = "windows"))]
-    {
-        println!("cargo:rustc-link-search=native={dlss_sdk}/lib/Linux_x86_64");
-        println!("cargo:rustc-link-lib=static=nvsdk_ngx");
-        println!("cargo:rustc-link-lib=dylib=stdc++");
-        println!("cargo:rustc-link-lib=dylib=dl");
+    let mut lib_dir = format!("{dlss_sdk}/lib/{platform}");
+    if target_os == "windows" && target_arch == "x86_64" {
+        lib_dir.push_str("/x64");
     }
-    #[cfg(target_os = "windows")]
-    {
-        println!("cargo:rustc-link-search=native={dlss_sdk}/lib/Windows_x86_64/x64");
+    if !Path::new(&lib_dir).is_dir() {
+        panic!("DLSS SDK at {dlss_sdk} has no libraries for {platform}");
+    }
+    println!("cargo:rustc-link-search=native={lib_dir}");
+    if target_os == "windows" {
         #[cfg(not(target_feature = "crt-static"))]
         println!("cargo:rustc-link-lib=static=nvsdk_ngx_d");
         #[cfg(target_feature = "crt-static")]
         println!("cargo:rustc-link-lib=static=nvsdk_ngx_s");
+    } else {
+        println!("cargo:rustc-link-lib=static=nvsdk_ngx");
+        println!("cargo:rustc-link-lib=dylib=stdc++");
+        println!("cargo:rustc-link-lib=dylib=dl");
     }
 
     // Generate rust bindings

@@ -34,6 +34,11 @@ impl DlssRayReconstruction {
         device: &Device,
         queue: &Queue,
     ) -> Result<Self, DlssError> {
+        // Not supported by ray reconstruction
+        if feature_flags.contains(DlssFeatureFlags::AutoExposure) {
+            return Err(DlssError::UnsupportedParameter);
+        }
+
         let locked_sdk = sdk.lock().unwrap();
 
         let perf_quality_value = perf_quality_mode.as_perf_quality_value(upscaled_resolution);
@@ -155,12 +160,36 @@ impl DlssRayReconstruction {
         let mut dlss_output = texture_to_ngx(render_parameters.dlss_output, adapter);
         let mut depth = texture_to_ngx(render_parameters.depth, adapter);
         let mut motion_vectors = texture_to_ngx(render_parameters.motion_vectors, adapter);
-        let mut bias = render_parameters
-            .bias
-            .map(|bias| texture_to_ngx(bias, adapter));
+        let mut transparency_layer = None;
+        let mut transparency_layer_opacity = None;
+        match render_parameters.transparency_overlay {
+            Some(DlssRayReconstructionTransparencyOverlay::Premultiplied(layer)) => {
+                transparency_layer = Some(texture_to_ngx(layer, adapter));
+            }
+            Some(DlssRayReconstructionTransparencyOverlay::Separate { color, opacity }) => {
+                transparency_layer = Some(texture_to_ngx(color, adapter));
+                transparency_layer_opacity = Some(texture_to_ngx(opacity, adapter));
+            }
+            None => {}
+        }
+        let mut color_before_transparency = render_parameters
+            .color_before_transparency
+            .map(|color| texture_to_ngx(color, adapter));
+        let mut depth_of_field_guide = render_parameters
+            .depth_of_field_guide
+            .map(|guide| texture_to_ngx(guide, adapter));
         let mut screen_space_subsurface_scattering_guide = render_parameters
             .screen_space_subsurface_scattering_guide
             .map(|guide| texture_to_ngx(guide, adapter));
+        let mut responsivity_mask = render_parameters
+            .responsivity_mask
+            .map(|mask| texture_to_ngx(mask, adapter));
+        let mut alpha = render_parameters
+            .alpha
+            .map(|alpha| texture_to_ngx(alpha, adapter));
+        let mut dlss_output_alpha = render_parameters
+            .dlss_output_alpha
+            .map(|alpha| texture_to_ngx(alpha, adapter));
         let mut specular_motion_vectors = None;
         let mut specular_hit_distance = None;
         let mut world_to_view = None;
@@ -180,17 +209,20 @@ impl DlssRayReconstruction {
             }
         }
 
-        // TODO: We may want to expose some more of these
         let mut eval_params = NVSDK_NGX_VK_DLSSD_Eval_Params {
-            pInResponsivityMask: ptr::null_mut(),
+            pInResponsivityMask: responsivity_mask
+                .as_mut()
+                .map_or(ptr::null_mut(), ptr::from_mut),
             pInDiffuseAlbedo: &mut diffuse_albedo,
             pInSpecularAlbedo: &mut specular_albedo,
             pInNormals: &mut normals,
             pInRoughness: roughness.as_mut().map_or(ptr::null_mut(), ptr::from_mut),
             pInColor: &mut color,
-            pInAlpha: ptr::null_mut(),
+            pInAlpha: alpha.as_mut().map_or(ptr::null_mut(), ptr::from_mut),
             pInOutput: &mut dlss_output,
-            pInOutputAlpha: ptr::null_mut(),
+            pInOutputAlpha: dlss_output_alpha
+                .as_mut()
+                .map_or(ptr::null_mut(), ptr::from_mut),
             pInDepth: &mut depth,
             pInMotionVectors: &mut motion_vectors,
             InJitterOffsetX: render_parameters.jitter_offset[0],
@@ -204,7 +236,7 @@ impl DlssRayReconstruction {
             InMVScaleY: render_parameters.motion_vector_scale.unwrap_or([1.0, 1.0])[1],
             pInTransparencyMask: ptr::null_mut(),
             pInExposureTexture: ptr::null_mut(),
-            pInBiasCurrentColorMask: bias.as_mut().map_or(ptr::null_mut(), ptr::from_mut),
+            pInBiasCurrentColorMask: ptr::null_mut(),
             InAlphaSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InOutputAlphaSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             InDiffuseAlbedoSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
@@ -225,7 +257,9 @@ impl DlssRayReconstruction {
             pInReflectedAlbedo: ptr::null_mut(),
             pInColorBeforeParticles: ptr::null_mut(),
             pInColorAfterParticles: ptr::null_mut(),
-            pInColorBeforeTransparency: ptr::null_mut(),
+            pInColorBeforeTransparency: color_before_transparency
+                .as_mut()
+                .map_or(ptr::null_mut(), ptr::from_mut),
             pInColorAfterTransparency: ptr::null_mut(),
             pInColorBeforeFog: ptr::null_mut(),
             pInColorAfterFog: ptr::null_mut(),
@@ -237,7 +271,9 @@ impl DlssRayReconstruction {
             pInScreenSpaceRefractionGuide: ptr::null_mut(),
             pInColorBeforeScreenSpaceRefraction: ptr::null_mut(),
             pInColorAfterScreenSpaceRefraction: ptr::null_mut(),
-            pInDepthOfFieldGuide: ptr::null_mut(),
+            pInDepthOfFieldGuide: depth_of_field_guide
+                .as_mut()
+                .map_or(ptr::null_mut(), ptr::from_mut),
             pInColorBeforeDepthOfField: ptr::null_mut(),
             pInColorAfterDepthOfField: ptr::null_mut(),
             pInDiffuseHitDistance: ptr::null_mut(),
@@ -296,9 +332,13 @@ impl DlssRayReconstruction {
             pInMotionVectorsReflections: specular_motion_vectors
                 .as_mut()
                 .map_or(ptr::null_mut(), ptr::from_mut),
-            pInTransparencyLayer: ptr::null_mut(),
+            pInTransparencyLayer: transparency_layer
+                .as_mut()
+                .map_or(ptr::null_mut(), ptr::from_mut),
             InTransparencyLayerSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
-            pInTransparencyLayerOpacity: ptr::null_mut(),
+            pInTransparencyLayerOpacity: transparency_layer_opacity
+                .as_mut()
+                .map_or(ptr::null_mut(), ptr::from_mut),
             InTransparencyLayerOpacitySubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
             pInTransparencyLayerMvecs: ptr::null_mut(),
             InTransparencyLayerMvecsSubrectBase: NVSDK_NGX_Coordinates { X: 0, Y: 0 },
@@ -413,12 +453,34 @@ pub struct DlssRayReconstructionRenderParameters<'a> {
     pub motion_vectors: &'a TextureView,
     /// Specular material guide.
     pub specular_guide: DlssRayReconstructionSpecularGuide<'a>,
+    /// Optional particles or other transparent effects, which are upscaled but not denoised.
+    ///
+    /// See section 3.4.10 of `$DLSS_SDK/doc/DLSS-RR Integration Guide.pdf`.
+    pub transparency_overlay: Option<DlssRayReconstructionTransparencyOverlay<'a>>,
+    /// Optional snapshot of [`Self::color`] before transparent effects are rendered on top of it.
+    ///
+    /// See section 3.4.11 of `$DLSS_SDK/doc/DLSS-RR Integration Guide.pdf`.
+    pub color_before_transparency: Option<&'a TextureView>,
     /// Screen-space subsurface scattering guide.
     ///
     /// See section 3.4.12 of `$DLSS_SDK/doc/DLSS-RR Integration Guide.pdf` for how to calculate this texture
     pub screen_space_subsurface_scattering_guide: Option<&'a TextureView>,
-    /// Optional per-pixel bias to make DLSS more reactive.
-    pub bias: Option<&'a TextureView>,
+    /// Optional depth of field guide.
+    ///
+    /// See section 3.4.13 of `$DLSS_SDK/doc/DLSS-RR Integration Guide.pdf` for how to calculate this texture.
+    pub depth_of_field_guide: Option<&'a TextureView>,
+    /// Optional per-pixel hint to make DLSS more or less responsive.
+    ///
+    /// See section 3.4.14 of `$DLSS_SDK/doc/DLSS-RR Integration Guide.pdf` for how to calculate this texture.
+    pub responsivity_mask: Option<&'a TextureView>,
+    /// Optional alpha texture to upscale, instead of the alpha channel of [`Self::color`].
+    ///
+    /// Requires [`DlssFeatureFlags::AlphaUpscaling`].
+    pub alpha: Option<&'a TextureView>,
+    /// Optional texture DLSS outputs alpha to, instead of the alpha channel of [`Self::dlss_output`].
+    ///
+    /// Requires [`DlssFeatureFlags::AlphaUpscaling`].
+    pub dlss_output_alpha: Option<&'a TextureView>,
     /// The texture DLSS outputs to.
     pub dlss_output: &'a TextureView,
     /// Whether DLSS should reset temporal history, useful for camera cuts.
@@ -447,6 +509,19 @@ pub enum DlssRayReconstructionSpecularGuide<'a> {
     },
 }
 
+/// Transparent effects rendered separately from [`DlssRayReconstructionRenderParameters::color`].
+pub enum DlssRayReconstructionTransparencyOverlay<'a> {
+    /// RGB premultiplied by alpha, with alpha as the blending factor.
+    Premultiplied(&'a TextureView),
+    /// Color and per-channel opacity as two separate textures.
+    Separate {
+        /// Transparency color.
+        color: &'a TextureView,
+        /// Per-channel opacity.
+        opacity: &'a TextureView,
+    },
+}
+
 impl<'a> DlssRayReconstructionRenderParameters<'a> {
     fn validate(&self) -> Result<(), DlssError> {
         // TODO
@@ -459,6 +534,14 @@ impl<'a> DlssRayReconstructionRenderParameters<'a> {
                 texture: texture_view.texture(),
                 selector: None,
                 state: TextureUses::RESOURCE,
+            }
+        }
+
+        fn storage_barrier(texture_view: &TextureView) -> TextureTransition<&Texture> {
+            TextureTransition {
+                texture: texture_view.texture(),
+                selector: None,
+                state: TextureUses::STORAGE_READ_WRITE,
             }
         }
 
@@ -479,14 +562,29 @@ impl<'a> DlssRayReconstructionRenderParameters<'a> {
                     ..
                 } => Some(resource_barrier(specular_hit_distance)),
             },
+            match &self.transparency_overlay {
+                Some(DlssRayReconstructionTransparencyOverlay::Premultiplied(layer)) => {
+                    Some(resource_barrier(layer))
+                }
+                Some(DlssRayReconstructionTransparencyOverlay::Separate { color, .. }) => {
+                    Some(resource_barrier(color))
+                }
+                None => None,
+            },
+            match &self.transparency_overlay {
+                Some(DlssRayReconstructionTransparencyOverlay::Separate { opacity, .. }) => {
+                    Some(resource_barrier(opacity))
+                }
+                _ => None,
+            },
+            self.color_before_transparency.map(resource_barrier),
             self.screen_space_subsurface_scattering_guide
                 .map(resource_barrier),
-            self.bias.map(resource_barrier),
-            Some(TextureTransition {
-                texture: self.dlss_output.texture(),
-                selector: None,
-                state: TextureUses::STORAGE_READ_WRITE,
-            }),
+            self.depth_of_field_guide.map(resource_barrier),
+            self.responsivity_mask.map(resource_barrier),
+            self.alpha.map(resource_barrier),
+            Some(storage_barrier(self.dlss_output)),
+            self.dlss_output_alpha.map(storage_barrier),
         ]
         .into_iter()
         .flatten()

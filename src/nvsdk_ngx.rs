@@ -87,6 +87,8 @@ bitflags::bitflags! {
         /// Camera is using a reverse depth buffer for [`crate::DlssRenderParameters::depth`].
         const InvertedDepth = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
         /// Have DLSS apply auto-exposure.
+        ///
+        /// Not supported by [`crate::DlssRayReconstruction`].
         const AutoExposure = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
         /// Use a 4 channel RGBA texture for [`crate::DlssRenderParameters::color`] instead of a 3 channel RGB texture.
         const AlphaUpscaling = NVSDK_NGX_DLSS_Feature_Flags_NVSDK_NGX_DLSS_Feature_Flags_AlphaUpscaling;
