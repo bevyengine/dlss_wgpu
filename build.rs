@@ -61,6 +61,7 @@ fn main() {
         .blocklist_item("PFN_vk.*")
         .blocklist_item(".*Cuda.*")
         .blocklist_item(".*CUDA.*")
+        .blocklist_item(".*D3[Dd].*")
         .generate()
         .unwrap()
         .write_to_file(out_dir.join("bindings.rs"))
