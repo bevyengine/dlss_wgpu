@@ -13,6 +13,7 @@ use wgpu::{
 /// Camera-specific object for using DLSS Super Resolution.
 pub struct DlssSuperResolution {
     upscaled_resolution: [u32; 2],
+    optimal_render_resolution: [u32; 2],
     min_render_resolution: [u32; 2],
     max_render_resolution: [u32; 2],
     device: Device,
@@ -97,6 +98,7 @@ impl DlssSuperResolution {
 
         Ok(Self {
             upscaled_resolution,
+            optimal_render_resolution,
             min_render_resolution,
             max_render_resolution,
             device: device.clone(),
@@ -236,7 +238,7 @@ impl DlssSuperResolution {
 
     /// The resolution the camera should render at, pre-upscaling.
     pub fn render_resolution(&self) -> [u32; 2] {
-        self.min_render_resolution
+        self.optimal_render_resolution
     }
 
     /// Like [`Self::render_resolution`], but returns a range of values for use with dynamic resolution scaling.
