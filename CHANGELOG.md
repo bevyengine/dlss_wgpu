@@ -1,3 +1,7 @@
+# v6.0.1
+
+* Fix `DlssSuperResolution::render_resolution` returning the minimum render resolution instead of the optimal one for the chosen quality mode
+
 # v6.0.0
 
 * Bump DLSS SDK to v310.9.1
